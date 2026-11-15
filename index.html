@@ -30,6 +30,9 @@ body{margin:0}
   --supply-edge:#1b8c83;
   --demand:#ffb13b;
   --warn:#ff6a5c;
+  --pink:#f6b3cf;
+  --pink-ink:#3b1028;
+  --pink-edge:#c47599;
   --display:'Oswald','Arial Narrow',sans-serif;
   --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
@@ -90,13 +93,13 @@ main{padding:14px 0 104px}
 .tapwrap{position:relative;margin-top:16px}
 .tap{
   width:100%;min-height:132px;border:0;border-radius:18px;
-  background:var(--supply);color:var(--supply-ink);
-  box-shadow:0 7px 0 var(--supply-edge);
+  background:var(--pink);color:var(--pink-ink);
+  box-shadow:0 7px 0 var(--pink-edge);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   user-select:none;-webkit-user-select:none;
   transition:transform .06s,box-shadow .06s;
 }
-.tap:active,.tap.down{transform:translateY(5px);box-shadow:0 2px 0 var(--supply-edge)}
+.tap:active,.tap.down{transform:translateY(5px);box-shadow:0 2px 0 var(--pink-edge)}
 .tap svg{width:30px;height:30px}
 .tap .t1{font:600 28px/1.1 var(--display);letter-spacing:.06em;text-transform:uppercase}
 .tap .t2{font:600 14px var(--mono)}
