@@ -30,9 +30,6 @@ body{margin:0}
   --supply-edge:#1b8c83;
   --demand:#ffb13b;
   --warn:#ff6a5c;
-  --pink:#f6b3cf;
-  --pink-ink:#3b1028;
-  --pink-edge:#c47599;
   --display:'Oswald','Arial Narrow',sans-serif;
   --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
@@ -93,13 +90,13 @@ main{padding:14px 0 104px}
 .tapwrap{position:relative;margin-top:16px}
 .tap{
   width:100%;min-height:132px;border:0;border-radius:18px;
-  background:var(--pink);color:var(--pink-ink);
-  box-shadow:0 7px 0 var(--pink-edge);
+  background:var(--supply);color:var(--supply-ink);
+  box-shadow:0 7px 0 var(--supply-edge);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   user-select:none;-webkit-user-select:none;
   transition:transform .06s,box-shadow .06s;
 }
-.tap:active,.tap.down{transform:translateY(5px);box-shadow:0 2px 0 var(--pink-edge)}
+.tap:active,.tap.down{transform:translateY(5px);box-shadow:0 2px 0 var(--supply-edge)}
 .tap svg{width:30px;height:30px}
 .tap .t1{font:600 28px/1.1 var(--display);letter-spacing:.06em;text-transform:uppercase}
 .tap .t2{font:600 14px var(--mono)}
@@ -152,6 +149,9 @@ main{padding:14px 0 104px}
 .big{font:600 24px var(--mono);color:var(--demand)}
 .wipe{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .credit{margin:28px 0 0;text-align:center;font:500 12px var(--mono);letter-spacing:.04em;color:var(--muted)}
+.cur.pre{margin:0 2px 0 0}
+.lead .seg{margin-top:10px;max-width:100%}
+.lead .seg button{min-height:44px;padding:8px 16px;font-size:13px}
 .wipe-q{font-size:14px;color:var(--fg)}
 .wipe-row{display:flex;flex-wrap:wrap;gap:10px}
 .wipe .btn{flex:0 0 auto;align-self:flex-start;min-height:34px;padding:5px 14px;font-size:12px;border-radius:7px}
@@ -159,15 +159,15 @@ main{padding:14px 0 104px}
 /* nav + toast */
 .tabs{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  padding-left:max(6px,env(safe-area-inset-left,0px));
+  padding-right:max(6px,env(safe-area-inset-right,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
   background:var(--panel);border-top:1px solid var(--line);
 }
-.tabbtn{position:relative;min-height:56px;padding:8px 0;border:0;background:transparent;color:var(--muted);font:600 10.5px var(--display);letter-spacing:.08em;text-transform:uppercase}
+.tabbtn{position:relative;min-height:56px;padding:8px 0;border:0;background:transparent;color:var(--muted);font:600 9.5px var(--display);letter-spacing:.05em;text-transform:uppercase}
 .tabbtn[aria-selected="true"]{color:var(--fg);box-shadow:inset 0 3px 0 var(--supply)}
-.dotn{position:absolute;top:10px;left:calc(50% + 22px);width:7px;height:7px;border-radius:50%;background:var(--demand)}
+.dotn{position:absolute;top:8px;left:calc(50% + 17px);width:7px;height:7px;border-radius:50%;background:var(--demand)}
 .toast{
   position:fixed;left:50%;bottom:calc(68px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);
   max-width:min(92vw,420px);padding:10px 14px;border-radius:9px;
@@ -181,17 +181,17 @@ main{padding:14px 0 104px}
 <div class="app">
   <header class="readout">
     <div class="r-row">
-      <span class="brand">Диспетчер</span>
+      <span class="brand" data-en="Dispatcher">Диспетчер</span>
       <span class="clock" id="clock">06:00 · День 1</span>
     </div>
     <div class="r-row r-money">
-      <div class="money"><span id="money">0</span><span class="cur">грн</span></div>
+      <div class="money"><span class="cur pre" id="curPre"></span><span id="money">0</span><span class="cur" id="curSuf">грн</span></div>
       <div class="rate" id="rate">+0 грн/с</div>
     </div>
     <div class="meters">
-      <div class="meter"><span class="m-k">Виробіток</span><span class="m-v sup" id="mSup">0 кВт</span></div>
-      <div class="meter"><span class="m-k">Попит</span><span class="m-v dem" id="mDem">0 кВт</span></div>
-      <div class="meter"><span class="m-k">Акумулятор</span><span class="m-v" id="mBat">—</span><span class="bar"><i id="mBatBar"></i></span></div>
+      <div class="meter"><span class="m-k" data-en="Output">Виробіток</span><span class="m-v sup" id="mSup">0 кВт</span></div>
+      <div class="meter"><span class="m-k" data-en="Demand">Попит</span><span class="m-v dem" id="mDem">0 кВт</span></div>
+      <div class="meter"><span class="m-k" data-en="Battery">Акумулятор</span><span class="m-v" id="mBat">—</span><span class="bar"><i id="mBatBar"></i></span></div>
     </div>
   </header>
 
@@ -200,8 +200,8 @@ main{padding:14px 0 104px}
       <div class="ev" id="ev" hidden><b id="evName"></b><span id="evText"></span><span class="ev-t" id="evT"></span></div>
       <div class="chartcard" id="chartCard">
         <div class="cc-head">
-          <h2>Добовий графік навантаження</h2>
-          <div class="legend"><span class="lg s">виробіток</span><span class="lg d">попит</span><span class="lg w">надлишок</span></div>
+          <h2 data-en="Daily load curve">Добовий графік навантаження</h2>
+          <div class="legend"><span class="lg s" data-en="output">виробіток</span><span class="lg d" data-en="demand">попит</span><span class="lg w" data-en="surplus">надлишок</span></div>
         </div>
         <canvas id="chart" role="img" aria-label="Графік виробітку й попиту за добу"></canvas>
       </div>
@@ -209,20 +209,20 @@ main{padding:14px 0 104px}
       <div class="tapwrap" id="tapwrap">
         <button type="button" class="tap" id="tap">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4L13.5 2z"/></svg>
-          <span class="t1">Крутити педалі</span>
+          <span class="t1" data-en="Pedal hard">Крутити педалі</span>
           <span class="t2" id="tapSub">+1 грн за натискання</span>
         </button>
       </div>
-      <p class="hint" id="hint">Кожне натискання продає трохи енергії. Купи динамо-велосипед на вкладці «Генерація»: він крутиться сам.</p>
+      <p class="hint" id="hint" data-en="Every tap sells a little energy. Buy a dynamo bike on the “Generation” tab: it pedals by itself.">Кожне натискання продає трохи енергії. Купи динамо-велосипед на вкладці «Генерація»: він крутиться сам.</p>
     </section>
 
     <section class="tab" id="tab-gen" hidden>
       <div class="toolbar">
-        <h2>Генерація</h2>
+        <h2 data-en="Generation">Генерація</h2>
         <div class="seg" id="qty">
           <button type="button" data-q="1" aria-pressed="true">×1</button>
           <button type="button" data-q="10" aria-pressed="false">×10</button>
-          <button type="button" data-q="max" aria-pressed="false">Макс</button>
+          <button type="button" data-q="max" aria-pressed="false" data-en="Max">Макс</button>
         </div>
       </div>
       <div class="rows" id="gen-list"></div>
@@ -241,59 +241,72 @@ main{padding:14px 0 104px}
             <div class="row-name"><span class="nm" id="gnName">Далі</span></div>
             <div class="row-desc" id="gnDesc"></div>
           </div>
-          <button type="button" class="buy" id="gnBuy"><span class="b1">Підключити</span><span class="b2" id="gnCost"></span></button>
+          <button type="button" class="buy" id="gnBuy"><span class="b1" data-en="Connect">Підключити</span><span class="b2" id="gnCost"></span></button>
         </div>
         <div class="row" id="battRow">
           <div class="row-main">
-            <div class="row-name"><span class="nm">Накопичувач</span><span class="cnt" id="bCnt"></span></div>
-            <div class="row-desc">Складає надлишок і віддає, коли попит вищий за виробіток.</div>
+            <div class="row-name"><span class="nm" data-en="Battery storage">Накопичувач</span><span class="cnt" id="bCnt"></span></div>
+            <div class="row-desc" data-en="Stores the surplus and releases it when demand exceeds output.">Складає надлишок і віддає, коли попит вищий за виробіток.</div>
             <div class="row-stat" id="bStat"></div>
           </div>
-          <button type="button" class="buy" id="bBuy"><span class="b1">Купити</span><span class="b2" id="bCost"></span></button>
+          <button type="button" class="buy" id="bBuy"><span class="b1" data-en="Buy">Купити</span><span class="b2" id="bCost"></span></button>
         </div>
       </div>
-      <p class="note">Чим більші споживачі, тим більший попит і тим більше можна продати. Енергія, якої не вистачило на попит, іде в акумулятори. Коли вони повні, вона пропадає.</p>
+      <p class="note" data-en="The bigger the consumers, the higher the demand and the more you can sell. Energy that demand cannot absorb goes into batteries. When they are full, it is wasted.">Чим більші споживачі, тим більший попит і тим більше можна продати. Енергія, якої не вистачило на попит, іде в акумулятори. Коли вони повні, вона пропадає.</p>
     </section>
 
     <section class="tab" id="tab-upg" hidden>
-      <div class="toolbar"><h2>Покращення</h2></div>
+      <div class="toolbar"><h2 data-en="Upgrades">Покращення</h2></div>
       <div class="rows" id="upg-list"></div>
     </section>
 
     <section class="tab" id="tab-reform" hidden>
-      <div class="toolbar"><h2>Реформа</h2></div>
+      <div class="toolbar"><h2 data-en="Reform">Реформа</h2></div>
       <div class="lead">
-        <div class="lead-k">Іскри</div>
+        <div class="lead-k" data-en="Sparks">Іскри</div>
         <div class="big" id="sparks">0</div>
         <div class="lead-s" id="sparkBonus">+0% до виробітку й натискань</div>
       </div>
       <div class="lead">
-        <div class="lead-k">Епоха</div>
+        <div class="lead-k" data-en="Era">Епоха</div>
         <div class="lead-v" id="eraName">Міста</div>
         <p class="note" id="eraNext" style="margin:6px 0 0"></p>
       </div>
-      <p class="note" style="margin:0 0 4px">Реформа скидає станцію, споживачів, акумулятори й покращення, але залишає іскри й відкриває нову епоху. Кожна іскра дає +10% до всього виробітку й натискань назавжди.</p>
+      <p class="note" style="margin:0 0 4px" data-en="A reform resets the station, consumers, batteries and upgrades, but keeps your sparks and opens a new era. Each spark gives +10% to all output and taps, permanently.">Реформа скидає станцію, споживачів, акумулятори й покращення, але залишає іскри й відкриває нову епоху. Кожна іскра дає +10% до всього виробітку й натискань назавжди.</p>
       <p class="note" id="reformReq" style="margin:0 0 4px"></p>
       <div class="reform-btns" id="reformBtns"></div>
       <dl class="stats">
-        <dt>Зароблено за всю гру</dt><dd id="stLife">0 грн</dd>
-        <dt>Зароблено за цю зміну</dt><dd id="stRun">0 грн</dd>
-        <dt>Натискань</dt><dd id="stClicks">0</dd>
-        <dt>Час гри</dt><dd id="stTime">0 хв</dd>
-        <dt>Реформ</dt><dd id="stResets">0</dd>
+        <dt data-en="Earned all game">Зароблено за всю гру</dt><dd id="stLife">0 грн</dd>
+        <dt data-en="Earned this shift">Зароблено за цю зміну</dt><dd id="stRun">0 грн</dd>
+        <dt data-en="Taps">Натискань</dt><dd id="stClicks">0</dd>
+        <dt data-en="Play time">Час гри</dt><dd id="stTime">0 хв</dd>
+        <dt data-en="Reforms">Реформ</dt><dd id="stResets">0</dd>
       </dl>
       <div class="wipe" id="wipe"></div>
-      <p class="credit">Розробник: Клод і Олексій</p>
+      <p class="credit" data-en="Developer: Claude and Oleksii">Розробник: Клод і Олексій</p>
+    </section>
+
+    <section class="tab" id="tab-set" hidden>
+      <div class="toolbar"><h2 data-en="Settings">Налаштування</h2></div>
+      <div class="lead">
+        <div class="lead-k" data-en="Language and currency">Мова й валюта</div>
+        <div class="seg" id="langSeg">
+          <button type="button" data-l="uk" aria-pressed="true">Українська · грн</button>
+          <button type="button" data-l="en" aria-pressed="false">English · $</button>
+        </div>
+        <p class="note" data-en="English also switches hryvnias to dollars. Only the symbol changes, the amounts stay the same.">Англійська мова змінює і валюту: гривні на долари. Змінюється лише знак, суми ті самі.</p>
+      </div>
     </section>
   </main>
 </div>
 
 <nav class="tabs" aria-label="Розділи">
-  <button type="button" class="tabbtn" data-tab="station" aria-selected="true">Станція<i class="dotn" hidden></i></button>
-  <button type="button" class="tabbtn" data-tab="gen" aria-selected="false">Генерація<i class="dotn" hidden></i></button>
-  <button type="button" class="tabbtn" data-tab="grid" aria-selected="false">Мережа<i class="dotn" hidden></i></button>
-  <button type="button" class="tabbtn" data-tab="upg" aria-selected="false">Апгрейди<i class="dotn" hidden></i></button>
-  <button type="button" class="tabbtn" data-tab="reform" aria-selected="false">Реформа<i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="station" aria-selected="true"><span data-en="Station">Станція</span><i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="gen" aria-selected="false"><span data-en="Generation">Генерація</span><i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="grid" aria-selected="false"><span data-en="Grid">Мережа</span><i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="upg" aria-selected="false"><span data-en="Upgrades">Апгрейди</span><i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="reform" aria-selected="false"><span data-en="Reform">Реформа</span><i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="set" aria-selected="false"><span data-en="Settings">Опції</span><i class="dotn" hidden></i></button>
 </nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -304,6 +317,67 @@ main{padding:14px 0 104px}
 var DAY = 120;            // seconds per game day
 var SAVE_KEY = 'dyspetcher-v1';
 var R = 1.15;             // generator cost growth
+
+/* ---------- language ---------- */
+var LANG_KEY = 'dyspetcher-lang';
+var LANG = 'uk';
+try{ if(localStorage.getItem(LANG_KEY) === 'en') LANG = 'en'; }catch(e){}
+function T(uk, en){ return LANG === 'en' ? en : uk; }
+var EN = {
+  'Динамо-велосипед':'Dynamo bike', 'Хтось крутить педалі, і світло не гасне.':'Someone pedals so the lights stay on.',
+  'Сонячна панель':'Solar panel', 'Працює вдень, уночі відпочиває.':'Works by day, rests at night.',
+  'Вітряк':'Wind turbine', 'Все залежить від вітру.':'Everything depends on the wind.',
+  'Біогазова установка':'Biogas plant', 'Стабільна, хоч і пахне так собі.':'Steady, even if it smells a bit.',
+  'Міні-ГЕС':'Mini hydro plant', 'Річка працює без вихідних.':'The river works without days off.',
+  'Атомний блок':'Nuclear unit', 'Багато, стабільно й дорого.':'Plenty of power, steady and expensive.',
+  'Термоядерний реактор':'Fusion reactor', 'Маленьке сонце в банці.':'A small sun in a jar.',
+  'Орбітальна станція':'Orbital station', 'Сонце без ночей і хмар. Енергія летить промінем.':'Sun without nights or clouds. The power comes down as a beam.',
+  'Геотермальна станція':'Geothermal plant', 'Тепло землі працює без перерв.':'Heat from the earth, nonstop.',
+  'Приливна електростанція':'Tidal power plant', 'Місяць крутить турбіни замість тебе.':'The Moon turns the turbines instead of you.',
+  'Плазмовий реактор':'Plasma reactor', 'Гарячіше, ніж у центрі зорі.':'Hotter than the core of a star.',
+  'Антиматерійний реактор':'Antimatter reactor', 'Склянка пального дорівнює цілій станції.':'A glass of fuel equals a whole plant.',
+  'Нейтронна зоря':'Neutron star', 'Дуже щільно, дуже гаряче, дуже потужно.':'Very dense, very hot, very powerful.',
+  'Сфера Дайсона':'Dyson sphere', 'Уся енергія зорі працює на тебе.':'All of a star\'s energy works for you.',
+
+  'Хутір':'Hamlet', 'Село':'Village', 'Селище':'Township', 'Містечко':'Small town', 'Місто':'Town', 'Велике місто':'City',
+  'Мегаполіс':'Metropolis', 'Агломерація':'Conurbation', 'Регіон':'Region', 'Країна':'Country',
+  'Гаражна майстерня':'Garage workshop', 'Цех':'Workshop', 'Фабрика':'Factory', 'Завод':'Plant', 'Промзона':'Industrial zone',
+  'Дата-центр':'Data center', 'Серверна ферма':'Server farm', 'Корпорація ШІ':'AI corporation', 'Мегакорпорація':'Megacorporation',
+  'Кластер нейромереж':'Neural network cluster', 'Гіпердата-центр':'Hyper data center', 'Планетарний ШІ':'Planetary AI',
+  'Місячна база':'Moon base', 'Марсіанська колонія':'Mars colony', 'Орбітальне місто':'Orbital city', 'Пояс астероїдів':'Asteroid belt',
+  'Колонії Юпітера':'Jupiter colonies', 'Зоряна верф':'Star shipyard', 'Місто на Венері':'Venus city', 'Флот ковчегів':'Ark fleet',
+  'Міжзоряна колонія':'Interstellar colony', 'Скупчення зірок':'Star cluster', 'Імперія Кардашова':'Kardashev empire',
+  'Галактичний розум':'Galactic mind', 'Мережа галактик':'Galaxy network', 'Симуляція всесвіту':'Universe simulation',
+
+  'Міста':'Cities', 'Індустрія':'Industry', 'Космос':'Space',
+  'Індустрія. Замість міст енергію споживатимуть цехи, заводи, дата-центри й корпорації ШІ. Нові генератори: геотермальна станція, приливна електростанція, плазмовий реактор.':
+    'Industry. Instead of cities, workshops, plants, data centers and AI corporations will use the energy. New generators: geothermal plant, tidal power plant, plasma reactor.',
+  'Космос. Місячні бази, колонії на Марсі й зоряні імперії. Нові генератори: антиматерійний реактор, нейтронна зоря, сфера Дайсона.':
+    'Space. Moon bases, Mars colonies and star empires. New generators: antimatter reactor, neutron star, Dyson sphere.',
+
+  'Гроза':'Thunderstorm', 'Хмари закрили сонце, вітер посилився.':'Clouds hid the sun and the wind picked up.',
+  'Штиль':'Calm', 'Вітряки майже стоять.':'The wind turbines are almost still.',
+  'Ясний день':'Clear day', 'Сонячні панелі дають на третину більше.':'Solar panels give a third more.',
+  'Спека':'Heat wave', 'Кондиціонери на повну. Попит +45%.':'Air conditioners on full. Demand +45%.',
+  'Фінал на стадіоні':'Stadium final', 'Прожектори й трансляції. Попит +70%.':'Floodlights and broadcasts. Demand +70%.',
+  'Мороз':'Frost', 'Увімкнули опалення. Попит +35%, вітер сильніший.':'Heating is on. Demand +35%, stronger wind.',
+
+  'Обслуговування':'Maintenance', 'Модернізація':'Modernization', 'Капремонт':'Overhaul', 'Автоматизація':'Automation',
+
+  'Тренування ніг':'Leg training', 'Рукавиці з гелем':'Gel gloves', 'Рекуператор':'Recuperator',
+  'Ручний диспетчер':'Manual dispatcher', 'Серво-педалі':'Servo pedals',
+  'Натискання дає ×2.':'Each tap earns ×2.', 'Натискання дає ×3.':'Each tap earns ×3.', 'Натискання дає ×5.':'Each tap earns ×5.',
+  'Розумні лічильники':'Smart meters', 'Тариф +15%.':'Tariff +15%.',
+  'Прогноз погоди':'Weather forecast', 'Вітер не слабшає нижче половини.':'Wind never drops below half.',
+  'Сонячні трекери':'Solar trackers', 'Панелі працюють довше вранці й увечері.':'Panels work longer in the morning and evening.',
+  'Літій-іонні комірки':'Li-ion cells', 'Ємність акумуляторів ×2.':'Battery capacity ×2.',
+  'Експорт до сусідів':'Export to neighbors', 'Тариф +25%.':'Tariff +25%.',
+  'Зелений сертифікат':'Green certificate', 'Тариф +35%.':'Tariff +35%.',
+  'ШІ-диспетчер':'AI dispatcher', 'Увесь виробіток +25%.':'All output +25%.'
+};
+function X(str){ return LANG === 'en' && EN[str] ? EN[str] : str; }
+function uName(u){ return u.gen ? X(u.gen.name) + ': ' + X(u.tier.label).toLowerCase() : X(u.name); }
+function uDesc(u){ return u.gen ? T('Виробіток цього типу ×' + u.tier.m + '.', 'Output of this type ×' + u.tier.m + '.') : X(u.desc); }
 
 /* ---------- content ---------- */
 var GEN = [
@@ -416,7 +490,7 @@ function addUpg(u){ UPG.push(u); }
 });
 GEN.forEach(function(g){
   TIERS.forEach(function(t, i){
-    addUpg({id:'g:'+g.id+':'+i, name:g.name+': '+t.label.toLowerCase(), desc:'Виробіток цього типу ×'+t.m+'.', cost:g.cost*t.cost,
+    addUpg({id:'g:'+g.id+':'+i, gen:g, tier:t, name:g.name+': '+t.label.toLowerCase(), desc:'Виробіток цього типу ×'+t.m+'.', cost:g.cost*t.cost,
       unlock:function(){ return (S.gens[g.id]||0)>=t.req; },
       apply:function(m){ m.gen[g.id]=(m.gen[g.id]||1)*t.m; }});
   });
@@ -522,7 +596,7 @@ function tick(){
 function offline(secs){
   var gain = S.avg * Math.min(secs, 14400) / 3;
   S.t += secs;
-  if(gain > 1){ S.money += gain; S.run += gain; S.life += gain; toast('Поки тебе не було: +' + fmt(gain) + ' грн'); }
+  if(gain > 1){ S.money += gain; S.run += gain; S.life += gain; toast(T('Поки тебе не було: +' + mny(gain), 'While you were away: +' + mny(gain))); }
 }
 
 /* ---------- events & bonus ---------- */
@@ -531,19 +605,19 @@ function startEvent(){
   var e = pool[Math.floor(Math.random()*pool.length)];
   S.lastEv = e.id;
   S.event = {id:e.id, left:e.dur};
-  toast(e.name + '. ' + e.text);
+  toast(X(e.name) + '. ' + X(e.text));
 }
 var BOLT_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4L13.5 2z"/></svg>';
 function spawnBolt(){
   var b = document.createElement('button');
   b.type = 'button'; b.className = 'bolt'; b.innerHTML = BOLT_SVG;
-  b.setAttribute('aria-label', 'Блискавка: забрати бонус');
+  b.setAttribute('aria-label', T('Блискавка: забрати бонус', 'Lightning: collect the bonus'));
   b.style.left = (10 + Math.random()*78) + '%';
   b.style.top = (22 + Math.random()*55) + '%';
   b.addEventListener('click', function(){
     var gain = Math.max(cur.inc*40, clickEarn()*25);
     S.money += gain; S.run += gain; S.life += gain;
-    toast('Блискавка! +' + fmt(gain) + ' грн');
+    toast(T('Блискавка! +' + mny(gain), 'Lightning! +' + mny(gain)));
     removeBolt();
   });
   els.chartCard.appendChild(b);
@@ -555,30 +629,34 @@ function removeBolt(){
 }
 
 /* ---------- formatting ---------- */
-var SUF = ['', ' тис.', ' млн', ' млрд', ' трлн', ' квадрлн'];
+var SUF_UK = ['', ' тис.', ' млн', ' млрд', ' трлн', ' квадрлн'];
+var SUF_EN = ['', 'K', 'M', 'B', 'T', 'Qa'];
+function SUFS(){ return LANG === 'en' ? SUF_EN : SUF_UK; }
 function fmt(n){
   if(!isFinite(n)) return '∞';
   var neg = n < 0; n = Math.abs(n);
   var i = 0;
-  if(n >= 1000){ i = Math.min(SUF.length-1, Math.floor(Math.log10(n)/3)); n = n / Math.pow(1000, i); }
+  if(n >= 1000){ i = Math.min(SUFS().length-1, Math.floor(Math.log10(n)/3)); n = n / Math.pow(1000, i); }
   var s = n < 10 ? n.toFixed(2) : (n < 100 ? n.toFixed(1) : n.toFixed(0));
   if(i === 0 && n < 10 && n >= 1) s = n.toFixed(2);
-  return (neg ? '-' : '') + s.replace('.', ',') + SUF[i];
+  return (neg ? '-' : '') + (LANG === 'en' ? s : s.replace('.', ',')) + SUFS()[i];
 }
 function powerStr(x){
-  if(x < 1000) return fmt(x) + ' кВт';
-  if(x < 1e6) return fmt(x/1e3) + ' МВт';
-  return fmt(x/1e6) + ' ГВт';
+  var u = LANG === 'en' ? ['kW', 'MW', 'GW'] : ['кВт', 'МВт', 'ГВт'];
+  if(x < 1000) return fmt(x) + ' ' + u[0];
+  if(x < 1e6) return fmt(x/1e3) + ' ' + u[1];
+  return fmt(x/1e6) + ' ' + u[2];
 }
+function mny(n){ return LANG === 'en' ? '$' + fmt(n) : fmt(n) + ' грн'; }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function clockStr(){
   var h = hourOf(S.t);
-  return pad(Math.floor(h)) + ':' + pad(Math.floor((h % 1) * 60)) + ' · День ' + (Math.floor(S.t / DAY) + 1);
+  return pad(Math.floor(h)) + ':' + pad(Math.floor((h % 1) * 60)) + T(' · День ', ' · Day ') + (Math.floor(S.t / DAY) + 1);
 }
 
 /* ---------- DOM refs ---------- */
 var els = {};
-['clock','money','rate','mSup','mDem','mBat','mBatBar','ev','evName','evText','evT','chart','chartCard','status','statusT','tap','tapwrap','tapSub','hint','toast'].forEach(function(id){ els[id] = document.getElementById(id); });
+['clock','money','curPre','curSuf','rate','mSup','mDem','mBat','mBatBar','ev','evName','evText','evT','chart','chartCard','status','statusT','tap','tapwrap','tapSub','hint','toast'].forEach(function(id){ els[id] = document.getElementById(id); });
 var toastTimer = 0;
 function toast(msg){
   els.toast.textContent = msg; els.toast.classList.add('on');
@@ -609,8 +687,8 @@ function buildGens(){
   GEN.forEach(function(g){
     var r = document.createElement('div'); r.className = 'row'; r.hidden = true;
     r.innerHTML = '<div class="row-main"><div class="row-name"><span class="nm"></span><span class="cnt"></span></div><div class="row-desc"></div><div class="row-stat"></div></div><button type="button" class="buy"><span class="b1"></span><span class="b2"></span></button>';
-    r.querySelector('.nm').textContent = g.name;
-    r.querySelector('.row-desc').textContent = g.desc;
+    r.querySelector('.nm').textContent = X(g.name);
+    r.querySelector('.row-desc').textContent = X(g.desc);
     var o = {g:g, row:r, cnt:r.querySelector('.cnt'), stat:r.querySelector('.row-stat'), btn:r.querySelector('.buy'), b1:r.querySelector('.b1'), b2:r.querySelector('.b2')};
     o.btn.addEventListener('click', function(){ buyGen(g); });
     box.appendChild(r); genRows.push(o);
@@ -635,13 +713,14 @@ function updateGens(){
     o.row.hidden = !visible; if(!visible) return;
     o.cnt.textContent = c ? '×' + c : '';
     var per = g.power * (mods.gen[g.id]||1) * mods.prod * (1 + 0.1*S.sparks);
-    var txt = c ? 'Дає ' + powerStr(per) + ' кожен · разом ' + powerStr(per*c) : 'Дасть ' + powerStr(per) + ' кожен';
-    if(g.src === 'sun') txt += ' · зараз ' + Math.round(sunNow(h)*100) + '%';
-    if(g.src === 'wind') txt += ' · зараз ' + Math.round(windNow(S.wind)*100) + '%';
+    var txt = c ? T('Дає ' + powerStr(per) + ' кожен · разом ' + powerStr(per*c), 'Gives ' + powerStr(per) + ' each · total ' + powerStr(per*c))
+                : T('Дасть ' + powerStr(per) + ' кожен', 'Gives ' + powerStr(per) + ' each');
+    if(g.src === 'sun') txt += T(' · зараз ', ' · now ') + Math.round(sunNow(h)*100) + '%';
+    if(g.src === 'wind') txt += T(' · зараз ', ' · now ') + Math.round(windNow(S.wind)*100) + '%';
     o.stat.textContent = txt;
     var n = genBuyN(g), cost = costN(g.cost, c, n);
-    o.b1.textContent = 'Купити ×' + n;
-    o.b2.textContent = fmt(cost) + ' грн';
+    o.b1.textContent = T('Купити ×', 'Buy ×') + n;
+    o.b2.textContent = mny(cost);
     o.btn.disabled = S.money < cost;
   });
 }
@@ -661,26 +740,26 @@ function buildPips(){
 }
 function updateGrid(){
   var g = GRID[S.grid];
-  document.getElementById('gridEra').textContent = 'Підключено · епоха «' + ERAS[eraIdx()].name + '»';
-  document.getElementById('gridName').textContent = g.name;
-  document.getElementById('gridSub').textContent = 'Піковий попит ' + powerStr(g.demand);
+  document.getElementById('gridEra').textContent = T('Підключено · епоха «' + X(ERAS[eraIdx()].name) + '»', 'Connected · era “' + X(ERAS[eraIdx()].name) + '”');
+  document.getElementById('gridName').textContent = X(g.name);
+  document.getElementById('gridSub').textContent = T('Піковий попит ', 'Peak demand ') + powerStr(g.demand);
   Array.prototype.forEach.call(pipsBox.children, function(p, i){ p.className = i <= S.grid ? 'on' : ''; });
   var next = GRID[S.grid + 1], row = document.getElementById('gridNext');
   if(next){
     row.hidden = false;
-    document.getElementById('gnName').textContent = next.name;
-    document.getElementById('gnDesc').textContent = 'Піковий попит ' + powerStr(next.demand) + ' (зараз ' + powerStr(g.demand) + ').';
-    document.getElementById('gnCost').textContent = fmt(next.cost) + ' грн';
+    document.getElementById('gnName').textContent = X(next.name);
+    document.getElementById('gnDesc').textContent = T('Піковий попит ' + powerStr(next.demand) + ' (зараз ' + powerStr(g.demand) + ').', 'Peak demand ' + powerStr(next.demand) + ' (now ' + powerStr(g.demand) + ').');
+    document.getElementById('gnCost').textContent = mny(next.cost);
     document.getElementById('gnBuy').disabled = S.money < next.cost;
   } else row.hidden = true;
   document.getElementById('bCnt').textContent = S.batt ? '×' + S.batt : '';
-  document.getElementById('bStat').textContent = 'Ємність ' + fmt(battCap()) + ' кВт·год · +' + fmt(GRID[S.grid].demand*5*mods.batt) + ' за штуку';
-  document.getElementById('bCost').textContent = fmt(battCost()) + ' грн';
+  document.getElementById('bStat').textContent = T('Ємність ' + fmt(battCap()) + ' кВт·год · +' + fmt(GRID[S.grid].demand*5*mods.batt) + ' за штуку', 'Capacity ' + fmt(battCap()) + ' kWh · +' + fmt(GRID[S.grid].demand*5*mods.batt) + ' each');
+  document.getElementById('bCost').textContent = mny(battCost());
   document.getElementById('bBuy').disabled = S.money < battCost();
 }
 document.getElementById('gnBuy').addEventListener('click', function(){
   var next = GRID[S.grid + 1]; if(!next || S.money < next.cost) return;
-  S.money -= next.cost; S.grid++; toast('Підключено: ' + next.name); updateGrid();
+  S.money -= next.cost; S.grid++; toast(T('Підключено: ' + X(next.name), 'Connected: ' + X(next.name))); updateGrid();
 });
 document.getElementById('bBuy').addEventListener('click', function(){
   var c = battCost(); if(S.money < c) return;
@@ -696,16 +775,16 @@ function rebuildUpg(force){
   upgKey = key;
   var box = document.getElementById('upg-list'); box.innerHTML = ''; upgRows = [];
   if(!list.length){
-    box.innerHTML = '<div class="empty">Нових покращень поки немає. Купуй генератори й підключай більші райони, і вони з\'являться.</div>';
+    box.innerHTML = '<div class="empty">' + T('Нових покращень поки немає. Купуй генератори й підключай більші райони, і вони з\'являться.', 'No new upgrades yet. Buy generators and connect bigger districts and they will appear.') + '</div>';
     return;
   }
   list.forEach(function(u){
     var r = document.createElement('div'); r.className = 'row';
-    r.innerHTML = '<div class="row-main"><div class="row-name"><span class="nm"></span></div><div class="row-desc"></div></div><button type="button" class="buy"><span class="b1">Купити</span><span class="b2"></span></button>';
-    r.querySelector('.nm').textContent = u.name;
-    r.querySelector('.row-desc').textContent = u.desc;
+    r.innerHTML = '<div class="row-main"><div class="row-name"><span class="nm"></span></div><div class="row-desc"></div></div><button type="button" class="buy"><span class="b1">' + T('Купити', 'Buy') + '</span><span class="b2"></span></button>';
+    r.querySelector('.nm').textContent = uName(u);
+    r.querySelector('.row-desc').textContent = uDesc(u);
     var btn = r.querySelector('.buy');
-    r.querySelector('.b2').textContent = fmt(u.cost) + ' грн';
+    r.querySelector('.b2').textContent = mny(u.cost);
     btn.addEventListener('click', function(){
       if(S.money < u.cost || S.upg[u.id]) return;
       S.money -= u.cost; S.upg[u.id] = 1; recalc(); rebuildUpg(false); updateGens();
@@ -719,39 +798,40 @@ function updateUpg(){ upgRows.forEach(function(o){ o.btn.disabled = S.money < o.
 var reformArmed = false;
 function renderReform(){
   var gain = sparkGain();
-  document.getElementById('eraName').textContent = ERAS[eraIdx()].name;
+  document.getElementById('eraName').textContent = X(ERAS[eraIdx()].name);
   var nextEra = S.resets + 1;
   document.getElementById('eraNext').textContent = nextEra < ERAS.length
-    ? 'Наступна реформа відкриє епоху: ' + ERAS[nextEra].text
-    : 'Усі епохи відкрито. Далі реформи дають лише іскри.';
+    ? T('Наступна реформа відкриє епоху: ', 'The next reform opens the era: ') + X(ERAS[nextEra].text)
+    : T('Усі епохи відкрито. Далі реформи дають лише іскри.', 'All eras unlocked. Further reforms only give sparks.');
   document.getElementById('sparks').textContent = S.sparks;
-  document.getElementById('sparkBonus').textContent = '+' + (S.sparks*10) + '% до виробітку й натискань';
-  document.getElementById('stLife').textContent = fmt(S.life) + ' грн';
-  document.getElementById('stRun').textContent = fmt(S.run) + ' грн';
+  document.getElementById('sparkBonus').textContent = T('+' + (S.sparks*10) + '% до виробітку й натискань', '+' + (S.sparks*10) + '% to output and taps');
+  document.getElementById('stLife').textContent = mny(S.life);
+  document.getElementById('stRun').textContent = mny(S.run);
   document.getElementById('stClicks').textContent = S.clicks;
-  document.getElementById('stTime').textContent = Math.floor(S.playtime/60) + ' хв';
+  document.getElementById('stTime').textContent = Math.floor(S.playtime/60) + T(' хв', ' min');
   document.getElementById('stResets').textContent = S.resets;
   var box = document.getElementById('reformBtns');
   var top = GRID[GRID.length - 1], need = reformCost();
   var maxed = S.grid >= GRID.length - 1, rich = S.money >= need, ready = maxed && rich && gain >= 1;
-  document.getElementById('reformReq').textContent = 'Умови реформи: 1) підключити «' + top.name + '» (зараз «' + GRID[S.grid].name + '»), ' +
-    '2) мати на рахунку ' + fmt(need) + ' грн (зараз ' + fmt(S.money) + ').';
-  var sig = gain + ':' + reformArmed + ':' + maxed + ':' + rich;
+  document.getElementById('reformReq').textContent = T(
+    'Умови реформи: 1) підключити «' + X(top.name) + '» (зараз «' + X(GRID[S.grid].name) + '»), 2) мати на рахунку ' + mny(need) + ' (зараз ' + mny(S.money) + ').',
+    'Reform requirements: 1) connect “' + X(top.name) + '” (now “' + X(GRID[S.grid].name) + '”), 2) have ' + mny(need) + ' on hand (now ' + mny(S.money) + ').');
+  var sig = gain + ':' + reformArmed + ':' + maxed + ':' + rich + ':' + LANG;
   if(box.getAttribute('data-sig') === sig) return;
   box.setAttribute('data-sig', sig); box.innerHTML = '';
   if(!ready){
     var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.disabled = true;
-    b.textContent = !maxed ? 'Підключи «' + top.name + '»' : 'Потрібно ' + fmt(need) + ' грн на рахунку';
+    b.textContent = !maxed ? T('Підключи «' + X(top.name) + '»', 'Connect “' + X(top.name) + '”') : T('Потрібно ' + mny(need) + ' на рахунку', 'Need ' + mny(need) + ' on hand');
     box.appendChild(b);
   } else if(!reformArmed){
     var a = document.createElement('button'); a.type = 'button'; a.className = 'btn';
-    a.textContent = 'Реформа: +' + gain + ' іск.';
+    a.textContent = T('Реформа: +' + gain + ' іск.', 'Reform: +' + gain + ' sparks');
     a.addEventListener('click', function(){ reformArmed = true; renderReform(); });
     box.appendChild(a);
   } else {
-    var y = document.createElement('button'); y.type = 'button'; y.className = 'btn danger'; y.textContent = 'Так, почати заново';
+    var y = document.createElement('button'); y.type = 'button'; y.className = 'btn danger'; y.textContent = T('Так, почати заново', 'Yes, start over');
     y.addEventListener('click', doReform);
-    var n = document.createElement('button'); n.type = 'button'; n.className = 'btn ghost'; n.textContent = 'Скасувати';
+    var n = document.createElement('button'); n.type = 'button'; n.className = 'btn ghost'; n.textContent = T('Скасувати', 'Cancel');
     n.addEventListener('click', function(){ reformArmed = false; renderReform(); });
     box.appendChild(y); box.appendChild(n);
   }
@@ -763,8 +843,8 @@ function doReform(){
   reformArmed = false; flow = {waste:0, charge:0, dis:0, deficit:0}; cur = {sup:0, dem:0, inc:0};
   setEra(); buildPips();
   removeBolt(); recalc(); buildGens(); rebuildUpg(true); updateGens(); updateGrid();
-  var eraNote = S.resets <= ERAS.length - 1 ? ' Нова епоха: ' + ERAS[eraIdx()].name + '.' : '';
-  toast('Реформа проведена. Іскор: ' + S.sparks + '.' + eraNote);
+  var eraNote = S.resets <= ERAS.length - 1 ? T(' Нова епоха: ', ' New era: ') + X(ERAS[eraIdx()].name) + '.' : '';
+  toast(T('Реформа проведена. Іскор: ', 'Reform done. Sparks: ') + S.sparks + '.' + eraNote);
   save(); showTab('station');
 }
 
@@ -773,17 +853,17 @@ function renderWipe(armed){
   var box = document.getElementById('wipe'); box.innerHTML = '';
   if(!armed){
     var b = document.createElement('button'); b.type = 'button'; b.className = 'btn danger';
-    b.textContent = 'Скинути весь прогрес';
+    b.textContent = T('Скинути весь прогрес', 'Reset all progress');
     b.addEventListener('click', function(){ renderWipe(true); });
     box.appendChild(b);
     return;
   }
   var q = document.createElement('div'); q.className = 'wipe-q';
-  q.textContent = 'Ви впевнені? Усе буде видалено разом з іскрами й епохами. Бонусу за скидання немає, гра почнеться з нуля.';
+  q.textContent = T('Ви впевнені? Усе буде видалено разом з іскрами й епохами. Бонусу за скидання немає, гра почнеться з нуля.', 'Are you sure? Everything will be deleted, including sparks and eras. There is no bonus for resetting, the game starts from scratch.');
   var row = document.createElement('div'); row.className = 'wipe-row';
-  var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn danger'; yes.textContent = 'Так, скинути';
+  var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn danger'; yes.textContent = T('Так, скинути', 'Yes, reset');
   yes.addEventListener('click', wipeAll);
-  var no = document.createElement('button'); no.type = 'button'; no.className = 'btn ghost'; no.textContent = 'Ні, залишити';
+  var no = document.createElement('button'); no.type = 'button'; no.className = 'btn ghost'; no.textContent = T('Ні, залишити', 'No, keep it');
   no.addEventListener('click', function(){ renderWipe(false); });
   row.appendChild(yes); row.appendChild(no);
   box.appendChild(q); box.appendChild(row);
@@ -794,7 +874,7 @@ function wipeAll(){
   removeBolt(); setEra(); recalc(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
   save(); renderWipe(false); showTab('station');
-  toast('Прогрес скинуто. Починаємо спочатку.');
+  toast(T('Прогрес скинуто. Починаємо спочатку.', 'Progress reset. Starting over.'));
 }
 
 /* ---------- chart ---------- */
@@ -856,18 +936,18 @@ function drawChart(){
 function renderStatus(){
   var k = 'ok', t;
   var dm = Math.max(cur.dem, 0.1);
-  if(flow.waste > 0.05*dm){ k = 'warn'; t = 'Надлишок пропадає. Підключи більший район або купи акумулятори.'; }
-  else if(flow.charge > 0.05*dm){ k = 'ok'; t = 'Зайву енергію складаємо в акумулятори.'; }
-  else if(flow.dis > 0.05*dm){ k = 'ok'; t = 'Акумулятори покривають нестачу виробітку.'; }
-  else if(cur.sup < cur.dem*0.98){ k = 'dem'; t = 'Попит вищий за виробіток. Усе продається, додай генераторів.'; }
-  else { t = 'Баланс: виробіток відповідає попиту.'; }
+  if(flow.waste > 0.05*dm){ k = 'warn'; t = T('Надлишок пропадає. Підключи більший район або купи акумулятори.', 'Surplus is being wasted. Connect a bigger district or buy batteries.'); }
+  else if(flow.charge > 0.05*dm){ k = 'ok'; t = T('Зайву енергію складаємо в акумулятори.', 'Storing the extra energy in batteries.'); }
+  else if(flow.dis > 0.05*dm){ k = 'ok'; t = T('Акумулятори покривають нестачу виробітку.', 'Batteries cover the output shortfall.'); }
+  else if(cur.sup < cur.dem*0.98){ k = 'dem'; t = T('Попит вищий за виробіток. Усе продається, додай генераторів.', 'Demand is above output. Everything sells, add more generators.'); }
+  else { t = T('Баланс: виробіток відповідає попиту.', 'Balanced: output matches demand.'); }
   els.status.setAttribute('data-k', k);
   if(els.statusT.textContent !== t) els.statusT.textContent = t;
 }
 function render(){
   els.clock.textContent = clockStr();
   els.money.textContent = fmt(S.money);
-  els.rate.textContent = '+' + fmt(cur.inc) + ' грн/с';
+  els.rate.textContent = T('+' + fmt(cur.inc) + ' грн/с', '+$' + fmt(cur.inc) + '/s');
   els.mSup.textContent = powerStr(cur.sup);
   els.mDem.textContent = powerStr(cur.dem);
   var cap = battCap();
@@ -877,10 +957,10 @@ function render(){
   if(tab === 'station'){
     var e = evDef();
     if(e){
-      els.ev.hidden = false; els.evName.textContent = e.name; els.evText.textContent = e.text;
-      els.evT.textContent = Math.ceil(S.event.left) + ' с';
+      els.ev.hidden = false; els.evName.textContent = X(e.name); els.evText.textContent = X(e.text);
+      els.evT.textContent = Math.ceil(S.event.left) + T(' с', ' s');
     } else els.ev.hidden = true;
-    els.tapSub.textContent = '+' + fmt(clickEarn()) + ' грн за натискання';
+    els.tapSub.textContent = T('+' + fmt(clickEarn()) + ' грн за натискання', '+$' + fmt(clickEarn()) + ' per tap');
     els.hint.hidden = S.run > 80 || Object.keys(S.gens).length > 0;
     renderStatus(); drawChart();
   } else if(tab === 'gen') updateGens();
@@ -901,6 +981,33 @@ function updateDots(){
   var flags = [false, gen, grid, upg, reform];
   Array.prototype.forEach.call(dots, function(d, i){ d.hidden = !flags[i] || (document.querySelectorAll('.tabbtn')[i].getAttribute('aria-selected') === 'true'); });
 }
+
+/* ---------- language switch ---------- */
+function applyStatic(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-en]'), function(el){
+    if(el.getAttribute('data-uk') === null) el.setAttribute('data-uk', el.textContent);
+    el.textContent = LANG === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-uk');
+  });
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'uk';
+  try{ document.title = T('Диспетчер', 'Dispatcher'); }catch(e){}
+  els.curPre.textContent = LANG === 'en' ? '$' : '';
+  els.curSuf.textContent = LANG === 'en' ? '' : 'грн';
+  els.chart.setAttribute('aria-label', T('Графік виробітку й попиту за добу', 'Daily output and demand chart'));
+  Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), function(b){
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-l') === LANG));
+  });
+}
+function setLang(l){
+  if(l === LANG) return;
+  LANG = l;
+  try{ localStorage.setItem(LANG_KEY, l); }catch(e){}
+  applyStatic(); buildGens(); updateGens(); rebuildUpg(true); updateGrid();
+  document.getElementById('reformBtns').removeAttribute('data-sig');
+  renderWipe(false); render(); updateDots();
+}
+Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), function(b){
+  b.addEventListener('click', function(){ setLang(b.getAttribute('data-l')); });
+});
 
 /* ---------- tabs ---------- */
 function showTab(t){
@@ -925,7 +1032,7 @@ function load(){
 function start(data){
   var fromHot = data && data.S;
   S = fromHot ? Object.assign(fresh(), data.S) : (load() || fresh());
-  setEra(); recalc(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
+  setEra(); recalc(); applyStatic(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
   if(!fromHot){ var away = (Date.now() - S.last)/1000; if(away > 30) offline(away); }
   lastT = performance.now();
   setInterval(tick, 100);
