@@ -294,7 +294,8 @@ main{padding:14px 0 104px}
           <button type="button" data-l="uk" aria-pressed="true">Українська · грн</button>
           <button type="button" data-l="en" aria-pressed="false">English · $</button>
         </div>
-        <p class="note" data-en="English also switches hryvnias to dollars. Only the symbol changes, the amounts stay the same.">Англійська мова змінює і валюту: гривні на долари. Змінюється лише знак, суми ті самі.</p>
+        <p class="note" data-en="English also switches hryvnias to dollars at the National Bank of Ukraine rate. The rate updates once a day.">Англійська мова змінює і валюту: гривні на долари за курсом НБУ. Курс оновлюється раз на день.</p>
+        <p class="note" id="rateInfo" style="margin-top:6px"></p>
       </div>
     </section>
   </main>
@@ -323,6 +324,37 @@ var LANG_KEY = 'dyspetcher-lang';
 var LANG = 'uk';
 try{ if(localStorage.getItem(LANG_KEY) === 'en') LANG = 'en'; }catch(e){}
 function T(uk, en){ return LANG === 'en' ? en : uk; }
+
+/* ---------- exchange rate (NBU), refreshed at most once a day ---------- */
+var RATE_KEY = 'dyspetcher-rate';
+var RATE = 45.38, RATE_DATE = '13.11.2026', RATE_AT = 0;   // fallback: NBU rate for 13.11.2026
+try{
+  var savedRate = JSON.parse(localStorage.getItem(RATE_KEY) || 'null');
+  if(savedRate && savedRate.rate > 0){ RATE = savedRate.rate; RATE_DATE = savedRate.date || ''; RATE_AT = savedRate.at || 0; }
+}catch(e){}
+function updateRateInfo(){
+  var el = document.getElementById('rateInfo'); if(!el) return;
+  var r = RATE.toFixed(2);
+  el.textContent = T('Поточний курс: 1 $ = ' + r.replace('.', ',') + ' грн' + (RATE_DATE ? ' (НБУ, ' + RATE_DATE + ')' : ''),
+                     'Current rate: $1 = ' + r + ' UAH' + (RATE_DATE ? ' (NBU, ' + RATE_DATE + ')' : ''));
+}
+function refreshRate(){
+  if(RATE_AT && Date.now() - RATE_AT < 86400000) return;
+  try{
+    fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json')
+      .then(function(r){ return r.json(); })
+      .then(function(a){
+        var x = a && a[0];
+        if(x && x.rate > 0){
+          RATE = x.rate; RATE_DATE = x.exchangedate || ''; RATE_AT = Date.now();
+          try{ localStorage.setItem(RATE_KEY, JSON.stringify({rate:RATE, date:RATE_DATE, at:RATE_AT})); }catch(e){}
+          updateRateInfo();
+        }
+      })
+      .catch(function(){});
+  }catch(e){}
+}
+function cv(n){ return LANG === 'en' ? n / RATE : n; }
 var EN = {
   'Динамо-велосипед':'Dynamo bike', 'Хтось крутить педалі, і світло не гасне.':'Someone pedals so the lights stay on.',
   'Сонячна панель':'Solar panel', 'Працює вдень, уночі відпочиває.':'Works by day, rests at night.',
@@ -647,7 +679,7 @@ function powerStr(x){
   if(x < 1e6) return fmt(x/1e3) + ' ' + u[1];
   return fmt(x/1e6) + ' ' + u[2];
 }
-function mny(n){ return LANG === 'en' ? '$' + fmt(n) : fmt(n) + ' грн'; }
+function mny(n){ return LANG === 'en' ? '$' + fmt(cv(n)) : fmt(n) + ' грн'; }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function clockStr(){
   var h = hourOf(S.t);
@@ -671,7 +703,7 @@ function doTap(x, y){
   var px = x == null ? r.width/2 : x - r.left, py = y == null ? 30 : y - r.top;
   if(els.tapwrap.querySelectorAll('.fl').length < 12){
     var f = document.createElement('span');
-    f.className = 'fl'; f.textContent = '+' + fmt(earn);
+    f.className = 'fl'; f.textContent = '+' + fmt(cv(earn));
     f.style.left = px + 'px'; f.style.top = py + 'px';
     els.tapwrap.appendChild(f);
     setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 850);
@@ -946,8 +978,8 @@ function renderStatus(){
 }
 function render(){
   els.clock.textContent = clockStr();
-  els.money.textContent = fmt(S.money);
-  els.rate.textContent = T('+' + fmt(cur.inc) + ' грн/с', '+$' + fmt(cur.inc) + '/s');
+  els.money.textContent = fmt(cv(S.money));
+  els.rate.textContent = T('+' + fmt(cur.inc) + ' грн/с', '+$' + fmt(cv(cur.inc)) + '/s');
   els.mSup.textContent = powerStr(cur.sup);
   els.mDem.textContent = powerStr(cur.dem);
   var cap = battCap();
@@ -960,7 +992,7 @@ function render(){
       els.ev.hidden = false; els.evName.textContent = X(e.name); els.evText.textContent = X(e.text);
       els.evT.textContent = Math.ceil(S.event.left) + T(' с', ' s');
     } else els.ev.hidden = true;
-    els.tapSub.textContent = T('+' + fmt(clickEarn()) + ' грн за натискання', '+$' + fmt(clickEarn()) + ' per tap');
+    els.tapSub.textContent = T('+' + fmt(clickEarn()) + ' грн за натискання', '+$' + fmt(cv(clickEarn())) + ' per tap');
     els.hint.hidden = S.run > 80 || Object.keys(S.gens).length > 0;
     renderStatus(); drawChart();
   } else if(tab === 'gen') updateGens();
@@ -991,6 +1023,7 @@ function applyStatic(){
   document.documentElement.lang = LANG === 'en' ? 'en' : 'uk';
   try{ document.title = T('Диспетчер', 'Dispatcher'); }catch(e){}
   els.curPre.textContent = LANG === 'en' ? '$' : '';
+  updateRateInfo();
   els.curSuf.textContent = LANG === 'en' ? '' : 'грн';
   els.chart.setAttribute('aria-label', T('Графік виробітку й попиту за добу', 'Daily output and demand chart'));
   Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), function(b){
@@ -1035,6 +1068,7 @@ function start(data){
   setEra(); recalc(); applyStatic(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
   if(!fromHot){ var away = (Date.now() - S.last)/1000; if(away > 30) offline(away); }
   lastT = performance.now();
+  refreshRate(); setInterval(refreshRate, 3600000);
   setInterval(tick, 100);
   setInterval(save, 5000);
   setInterval(updateDots, 500);
