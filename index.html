@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>Диспетчер</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Layout: dispatcher's console. Pinned readout on top, one panel per tab, tab bar at the bottom. */
+:root{
+  color-scheme: dark;
+  --bg:#0a121b;
+  --panel:#101b27;
+  --panel-hi:#162637;
+  --line:#213448;
+  --fg:#e4ecf3;
+  --muted:#8497aa;
+  --supply:#35d0c2;
+  --supply-ink:#04211e;
+  --supply-edge:#1b8c83;
+  --demand:#ffb13b;
+  --warn:#ff6a5c;
+  --display:'Oswald','Arial Narrow',sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:var(--body);font-size:15px;line-height:1.4;
+  padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+h2{margin:0;font:600 12px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.app{max-width:640px;margin:0 auto}
+
+/* readout */
+.readout{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.r-row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 12px}
+.brand{font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.clock{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.r-money{margin-top:2px}
+.money{font:600 34px/1.1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em;min-width:0}
+.cur{font:500 14px var(--mono);color:var(--muted);margin-left:2px}
+.rate{font:500 14px var(--mono);color:var(--supply);font-variant-numeric:tabular-nums;white-space:nowrap}
+.meters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.meter{min-width:0;display:flex;flex-direction:column;gap:1px}
+.m-k{font:500 10.5px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.m-v{font:500 13px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-v.sup{color:var(--supply)}
+.m-v.dem{color:var(--demand)}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;width:0;background:var(--supply)}
+
+main{padding:14px 0 104px}
+.tab[hidden]{display:none}
+
+/* station */
+.ev{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin-bottom:10px;padding:10px 12px;background:var(--panel-hi);border:1px solid var(--line);border-radius:10px;font-size:13.5px}
+.ev b{font:600 15px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--demand)}
+.ev .ev-t{margin-left:auto;font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.chartcard{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 12px 6px;overflow:hidden}
+.cc-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin-bottom:6px}
+.legend{display:flex;gap:10px;font:500 11px var(--mono);color:var(--muted)}
+.lg::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.lg.s::before{background:var(--supply)}
+.lg.d::before{background:var(--demand)}
+.lg.w::before{background:var(--warn)}
+#chart{display:block;width:100%;height:176px}
+.status{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;min-height:46px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:13.5px}
+.status .dot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--supply)}
+.status[data-k="warn"] .dot{background:var(--warn)}
+.status[data-k="dem"] .dot{background:var(--demand)}
+.tapwrap{position:relative;margin-top:16px}
+.tap{
+  width:100%;min-height:132px;border:0;border-radius:18px;
+  background:var(--supply);color:var(--supply-ink);
+  box-shadow:0 7px 0 var(--supply-edge);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  user-select:none;-webkit-user-select:none;
+  transition:transform .06s,box-shadow .06s;
+}
+.tap:active,.tap.down{transform:translateY(5px);box-shadow:0 2px 0 var(--supply-edge)}
+.tap svg{width:30px;height:30px}
+.tap .t1{font:600 28px/1.1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.tap .t2{font:600 14px var(--mono)}
+.fl{position:absolute;pointer-events:none;font:600 18px var(--mono);color:var(--fg);text-shadow:0 1px 0 rgba(0,0,0,.5);animation:fl .8s ease-out forwards;white-space:nowrap}
+@keyframes fl{from{opacity:1;transform:translate(-50%,-10px)}to{opacity:0;transform:translate(-50%,-64px)}}
+.hint{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
+.bolt{position:absolute;width:48px;height:48px;margin:-24px 0 0 -24px;border:0;border-radius:50%;background:var(--demand);color:#2b1a00;display:grid;place-items:center;animation:pulse 1s ease-in-out infinite;z-index:3}
+.bolt svg{width:26px;height:26px}
+@keyframes pulse{50%{transform:scale(1.14)}}
+
+/* lists */
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 14px;min-height:38px;font:600 12px var(--mono);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--panel-hi);color:var(--fg)}
+.rows{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px;border-top:1px solid var(--line)}
+.rows>.row:first-child{border-top:0}
+.row-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.row-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 8px}
+.nm{font:600 17px/1.25 var(--display);letter-spacing:.03em;text-transform:uppercase}
+.cnt{font:600 13px var(--mono);color:var(--supply)}
+.row-desc{font-size:13px;color:var(--muted)}
+.row-stat{font:500 12px/1.4 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.buy{
+  min-width:112px;min-height:48px;padding:6px 10px;border-radius:9px;
+  border:1px solid var(--supply);background:var(--supply);color:var(--supply-ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+}
+.buy .b1{font:600 11px var(--display);letter-spacing:.1em;text-transform:uppercase}
+.buy .b2{font:600 13px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.buy:disabled{background:transparent;border-color:var(--line);color:var(--muted);cursor:default}
+.empty{padding:20px 14px;color:var(--muted);font-size:14px}
+.lead{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.lead-k{font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead-v{font:600 30px/1.15 var(--display);letter-spacing:.03em;text-transform:uppercase;margin-top:2px}
+.lead-s{font:500 13px var(--mono);color:var(--demand);margin-top:2px}
+.pips{display:flex;gap:4px;margin-top:12px}
+.pips span{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.pips span.on{background:var(--demand)}
+.note{margin:12px 0 0;font-size:13.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;margin:0;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:14px}
+.stats dt{color:var(--muted)}
+.stats dd{margin:0;font:500 14px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.reform-btns{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.btn{min-height:48px;padding:10px 18px;border-radius:9px;border:1px solid var(--supply);background:var(--supply);color:var(--supply-ink);font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn.danger{background:var(--warn);border-color:var(--warn);color:#2a0803}
+.btn:disabled{background:transparent;border-color:var(--line);color:var(--muted);cursor:default}
+.big{font:600 24px var(--mono);color:var(--demand)}
+.wipe{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.wipe-q{font-size:14px;color:var(--fg)}
+.wipe-row{display:flex;flex-wrap:wrap;gap:10px}
+.wipe .btn{flex:0 0 auto;align-self:flex-start;min-height:34px;padding:5px 14px;font-size:12px;border-radius:7px}
+
+/* nav + toast */
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--panel);border-top:1px solid var(--line);
+}
+.tabbtn{position:relative;min-height:56px;padding:8px 0;border:0;background:transparent;color:var(--muted);font:600 10.5px var(--display);letter-spacing:.08em;text-transform:uppercase}
+.tabbtn[aria-selected="true"]{color:var(--fg);box-shadow:inset 0 3px 0 var(--supply)}
+.dotn{position:absolute;top:10px;left:calc(50% + 22px);width:7px;height:7px;border-radius:50%;background:var(--demand)}
+.toast{
+  position:fixed;left:50%;bottom:calc(68px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);
+  max-width:min(92vw,420px);padding:10px 14px;border-radius:9px;
+  background:var(--fg);color:var(--bg);font-size:13.5px;font-weight:500;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:25;text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <header class="readout">
+    <div class="r-row">
+      <span class="brand">Диспетчер</span>
+      <span class="clock" id="clock">06:00 · День 1</span>
+    </div>
+    <div class="r-row r-money">
+      <div class="money"><span id="money">0</span><span class="cur">грн</span></div>
+      <div class="rate" id="rate">+0 грн/с</div>
+    </div>
+    <div class="meters">
+      <div class="meter"><span class="m-k">Виробіток</span><span class="m-v sup" id="mSup">0 кВт</span></div>
+      <div class="meter"><span class="m-k">Попит</span><span class="m-v dem" id="mDem">0 кВт</span></div>
+      <div class="meter"><span class="m-k">Акумулятор</span><span class="m-v" id="mBat">—</span><span class="bar"><i id="mBatBar"></i></span></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="tab" id="tab-station">
+      <div class="ev" id="ev" hidden><b id="evName"></b><span id="evText"></span><span class="ev-t" id="evT"></span></div>
+      <div class="chartcard" id="chartCard">
+        <div class="cc-head">
+          <h2>Добовий графік навантаження</h2>
+          <div class="legend"><span class="lg s">виробіток</span><span class="lg d">попит</span><span class="lg w">надлишок</span></div>
+        </div>
+        <canvas id="chart" role="img" aria-label="Графік виробітку й попиту за добу"></canvas>
+      </div>
+      <div class="status" id="status" data-k="ok"><i class="dot"></i><span id="statusT">Починаємо зміну.</span></div>
+      <div class="tapwrap" id="tapwrap">
+        <button type="button" class="tap" id="tap">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4L13.5 2z"/></svg>
+          <span class="t1">Крутити педалі</span>
+          <span class="t2" id="tapSub">+1 грн за натискання</span>
+        </button>
+      </div>
+      <p class="hint" id="hint">Кожне натискання продає трохи енергії. Купи динамо-велосипед на вкладці «Генерація»: він крутиться сам.</p>
+    </section>
+
+    <section class="tab" id="tab-gen" hidden>
+      <div class="toolbar">
+        <h2>Генерація</h2>
+        <div class="seg" id="qty">
+          <button type="button" data-q="1" aria-pressed="true">×1</button>
+          <button type="button" data-q="10" aria-pressed="false">×10</button>
+          <button type="button" data-q="max" aria-pressed="false">Макс</button>
+        </div>
+      </div>
+      <div class="rows" id="gen-list"></div>
+    </section>
+
+    <section class="tab" id="tab-grid" hidden>
+      <div class="lead">
+        <div class="lead-k" id="gridEra">Підключено</div>
+        <div class="lead-v" id="gridName">Хутір</div>
+        <div class="lead-s" id="gridSub"></div>
+        <div class="pips" id="pips"></div>
+      </div>
+      <div class="rows">
+        <div class="row" id="gridNext">
+          <div class="row-main">
+            <div class="row-name"><span class="nm" id="gnName">Далі</span></div>
+            <div class="row-desc" id="gnDesc"></div>
+          </div>
+          <button type="button" class="buy" id="gnBuy"><span class="b1">Підключити</span><span class="b2" id="gnCost"></span></button>
+        </div>
+        <div class="row" id="battRow">
+          <div class="row-main">
+            <div class="row-name"><span class="nm">Накопичувач</span><span class="cnt" id="bCnt"></span></div>
+            <div class="row-desc">Складає надлишок і віддає, коли попит вищий за виробіток.</div>
+            <div class="row-stat" id="bStat"></div>
+          </div>
+          <button type="button" class="buy" id="bBuy"><span class="b1">Купити</span><span class="b2" id="bCost"></span></button>
+        </div>
+      </div>
+      <p class="note">Чим більші споживачі, тим більший попит і тим більше можна продати. Енергія, якої не вистачило на попит, іде в акумулятори. Коли вони повні, вона пропадає.</p>
+    </section>
+
+    <section class="tab" id="tab-upg" hidden>
+      <div class="toolbar"><h2>Покращення</h2></div>
+      <div class="rows" id="upg-list"></div>
+    </section>
+
+    <section class="tab" id="tab-reform" hidden>
+      <div class="toolbar"><h2>Реформа</h2></div>
+      <div class="lead">
+        <div class="lead-k">Іскри</div>
+        <div class="big" id="sparks">0</div>
+        <div class="lead-s" id="sparkBonus">+0% до виробітку й натискань</div>
+      </div>
+      <div class="lead">
+        <div class="lead-k">Епоха</div>
+        <div class="lead-v" id="eraName">Міста</div>
+        <p class="note" id="eraNext" style="margin:6px 0 0"></p>
+      </div>
+      <p class="note" style="margin:0 0 4px">Реформа скидає станцію, споживачів, акумулятори й покращення, але залишає іскри й відкриває нову епоху. Кожна іскра дає +10% до всього виробітку й натискань назавжди.</p>
+      <p class="note" id="reformReq" style="margin:0 0 4px"></p>
+      <div class="reform-btns" id="reformBtns"></div>
+      <dl class="stats">
+        <dt>Зароблено за всю гру</dt><dd id="stLife">0 грн</dd>
+        <dt>Зароблено за цю зміну</dt><dd id="stRun">0 грн</dd>
+        <dt>Натискань</dt><dd id="stClicks">0</dd>
+        <dt>Час гри</dt><dd id="stTime">0 хв</dd>
+        <dt>Реформ</dt><dd id="stResets">0</dd>
+      </dl>
+      <div class="wipe" id="wipe"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs" aria-label="Розділи">
+  <button type="button" class="tabbtn" data-tab="station" aria-selected="true">Станція<i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="gen" aria-selected="false">Генерація<i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="grid" aria-selected="false">Мережа<i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="upg" aria-selected="false">Апгрейди<i class="dotn" hidden></i></button>
+  <button type="button" class="tabbtn" data-tab="reform" aria-selected="false">Реформа<i class="dotn" hidden></i></button>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+var DAY = 120;            // seconds per game day
+var SAVE_KEY = 'dyspetcher-v1';
+var R = 1.15;             // generator cost growth
+
+/* ---------- content ---------- */
+var GEN = [
+  {id:'dyn',  name:'Динамо-велосипед',     desc:'Хтось крутить педалі, і світло не гасне.',   cost:15,     power:0.3,   src:'flat'},
+  {id:'sol',  name:'Сонячна панель',       desc:'Працює вдень, уночі відпочиває.',            cost:110,    power:1.5,   src:'sun'},
+  {id:'wind', name:'Вітряк',               desc:'Все залежить від вітру.',                    cost:1200,   power:9,     src:'wind'},
+  {id:'bio',  name:'Біогазова установка',  desc:'Стабільна, хоч і пахне так собі.',           cost:13000,  power:55,    src:'flat'},
+  {id:'hydro',name:'Міні-ГЕС',             desc:'Річка працює без вихідних.',                 cost:140000, power:310,   src:'flat'},
+  {id:'nuke', name:'Атомний блок',         desc:'Багато, стабільно й дорого.',                cost:1.6e6,  power:1800,  src:'flat'},
+  {id:'fus',  name:'Термоядерний реактор', desc:'Маленьке сонце в банці.',                    cost:2.2e7,  power:11000, src:'flat'},
+  {id:'orb',  name:'Орбітальна станція',   desc:'Сонце без ночей і хмар. Енергія летить промінем.', cost:3e8, power:70000, src:'flat'},
+  {id:'geo',  era:1, name:'Геотермальна станція',    desc:'Тепло землі працює без перерв.',            cost:3.6e9,  power:4.5e5, src:'flat'},
+  {id:'tide', era:1, name:'Приливна електростанція', desc:'Місяць крутить турбіни замість тебе.',      cost:4.3e10, power:2.9e6, src:'flat'},
+  {id:'plas', era:1, name:'Плазмовий реактор',       desc:'Гарячіше, ніж у центрі зорі.',              cost:5.2e11, power:1.85e7, src:'flat'},
+  {id:'anti', era:2, name:'Антиматерійний реактор',  desc:'Склянка пального дорівнює цілій станції.',  cost:6.2e12, power:1.2e8, src:'flat'},
+  {id:'neut', era:2, name:'Нейтронна зоря',          desc:'Дуже щільно, дуже гаряче, дуже потужно.',   cost:7.5e13, power:7.7e8, src:'flat'},
+  {id:'dys',  era:2, name:'Сфера Дайсона',           desc:'Уся енергія зорі працює на тебе.',          cost:9e14,   power:5e9,   src:'flat'}
+];
+var GRID0 = [
+  {name:'Хутір',        demand:4,      cost:0},
+  {name:'Село',         demand:12,     cost:100},
+  {name:'Селище',       demand:40,     cost:900},
+  {name:'Містечко',     demand:140,    cost:3200},
+  {name:'Місто',        demand:520,    cost:11000},
+  {name:'Велике місто', demand:2000,   cost:42000},
+  {name:'Мегаполіс',    demand:8000,   cost:160000},
+  {name:'Агломерація',  demand:34000,  cost:640000},
+  {name:'Регіон',       demand:150000, cost:2.7e6},
+  {name:'Країна',       demand:700000, cost:1.2e7}
+];
+function ladder(rows){
+  return rows.map(function(r, i){
+    var cost = 0;
+    if(i === 1) cost = 120;
+    else if(i > 1) cost = Number((80 * rows[i-1][1]).toPrecision(2));
+    return {name:r[0], demand:r[1], cost:cost};
+  });
+}
+var GRID1 = ladder([
+  ['Гаражна майстерня', 4], ['Цех', 14], ['Фабрика', 55], ['Завод', 220], ['Промзона', 900],
+  ['Дата-центр', 3500], ['Серверна ферма', 14000], ['Корпорація ШІ', 60000], ['Мегакорпорація', 250000],
+  ['Кластер нейромереж', 1e6], ['Гіпердата-центр', 4e6], ['Планетарний ШІ', 1.8e7]
+]);
+var GRID2 = ladder([
+  ['Місячна база', 4], ['Марсіанська колонія', 25], ['Орбітальне місто', 150], ['Пояс астероїдів', 900],
+  ['Колонії Юпітера', 5400], ['Зоряна верф', 3.2e4], ['Місто на Венері', 2e5], ['Флот ковчегів', 1.2e6],
+  ['Міжзоряна колонія', 7e6], ['Скупчення зірок', 4e7], ['Імперія Кардашова', 2.5e8],
+  ['Галактичний розум', 1.5e9], ['Мережа галактик', 9e9], ['Симуляція всесвіту', 5e10]
+]);
+var GRIDS = [GRID0, GRID1, GRID2];
+var ERAS = [
+  {name:'Міста',     text:''},
+  {name:'Індустрія', text:'Індустрія. Замість міст енергію споживатимуть цехи, заводи, дата-центри й корпорації ШІ. Нові генератори: геотермальна станція, приливна електростанція, плазмовий реактор.'},
+  {name:'Космос',    text:'Космос. Місячні бази, колонії на Марсі й зоряні імперії. Нові генератори: антиматерійний реактор, нейтронна зоря, сфера Дайсона.'}
+];
+var GRID = GRID0;
+function eraIdx(){ return Math.min(S.resets, GRIDS.length - 1); }
+function setEra(){ GRID = GRIDS[eraIdx()]; }
+var EVENTS = [
+  {id:'storm', name:'Гроза',            text:'Хмари закрили сонце, вітер посилився.',        dur:25, sun:0.2,  wind:1.7},
+  {id:'calm',  name:'Штиль',            text:'Вітряки майже стоять.',                        dur:25, wind:0.05},
+  {id:'sunny', name:'Ясний день',       text:'Сонячні панелі дають на третину більше.',      dur:30, sun:1.35},
+  {id:'heat',  name:'Спека',            text:'Кондиціонери на повну. Попит +45%.',           dur:30, demand:1.45},
+  {id:'match', name:'Фінал на стадіоні',text:'Прожектори й трансляції. Попит +70%.',         dur:20, demand:1.7},
+  {id:'frost', name:'Мороз',            text:'Увімкнули опалення. Попит +35%, вітер сильніший.', dur:30, demand:1.35, wind:1.3}
+];
+var TIERS = [
+  {req:5,  cost:6,     m:2, label:'Обслуговування'},
+  {req:15, cost:60,    m:2, label:'Модернізація'},
+  {req:30, cost:1000,  m:3, label:'Капремонт'},
+  {req:50, cost:30000, m:3, label:'Автоматизація'}
+];
+
+/* ---------- state ---------- */
+var S, mods;
+function fresh(){
+  return {money:0, run:0, life:0, clicks:0, gens:{}, upg:{}, grid:0, batt:0, stored:0, sparks:0, resets:0,
+          t:30, playtime:0, wind:0.8, windT:0.8, windTimer:8, event:null, evTimer:55, boltTimer:45, avg:0, last:Date.now()};
+}
+var cur = {sup:0, dem:0, inc:0};
+var flow = {waste:0, charge:0, dis:0, deficit:0};
+var qty = '1';
+var tab = 'station';
+var bolt = null;
+
+/* ---------- upgrades ---------- */
+var UPG = [];
+function addUpg(u){ UPG.push(u); }
+[
+  {id:'c1', name:'Тренування ніг',      desc:'Натискання дає ×2.', cost:80,    run:0,     k:2},
+  {id:'c2', name:'Рукавиці з гелем',    desc:'Натискання дає ×2.', cost:1200,  run:300,   k:2},
+  {id:'c3', name:'Рекуператор',         desc:'Натискання дає ×3.', cost:35000, run:1e4,   k:3},
+  {id:'c4', name:'Ручний диспетчер',    desc:'Натискання дає ×5.', cost:1.5e6, run:4e5,   k:5},
+  {id:'c5', name:'Серво-педалі',        desc:'Натискання дає ×5.', cost:1e8,   run:3e7,   k:5}
+].forEach(function(c){
+  addUpg({id:c.id, name:c.name, desc:c.desc, cost:c.cost,
+    unlock:function(){ return S.run>=c.run; },
+    apply:function(m){ m.click*=c.k; }});
+});
+[
+  {id:'meter', name:'Розумні лічильники',        desc:'Тариф +15%.',                           cost:1500,  ok:function(){return S.run>=500;},   ap:function(m){m.tariff*=1.15;}},
+  {id:'fore',  name:'Прогноз погоди',            desc:'Вітер не слабшає нижче половини.',      cost:6000,  ok:function(){return (S.gens.wind||0)>0;}, ap:function(m){m.windFloor=true;}},
+  {id:'track', name:'Сонячні трекери',           desc:'Панелі працюють довше вранці й увечері.', cost:25000, ok:function(){return (S.gens.sol||0)>=5;}, ap:function(m){m.tracker=true;}},
+  {id:'liion', name:'Літій-іонні комірки',       desc:'Ємність акумуляторів ×2.',              cost:90000, ok:function(){return S.batt>=1;},      ap:function(m){m.batt*=2;}},
+  {id:'exp',   name:'Експорт до сусідів',        desc:'Тариф +25%.',                           cost:6e5,   ok:function(){return S.run>=2e5;},     ap:function(m){m.tariff*=1.25;}},
+  {id:'green', name:'Зелений сертифікат',        desc:'Тариф +35%.',                           cost:6e7,   ok:function(){return S.run>=2e7;},     ap:function(m){m.tariff*=1.35;}},
+  {id:'ai',    name:'ШІ-диспетчер',              desc:'Увесь виробіток +25%.',                 cost:2e8,   ok:function(){return S.run>=8e7;},     ap:function(m){m.prod*=1.25;}}
+].forEach(function(u){
+  addUpg({id:u.id, name:u.name, desc:u.desc, cost:u.cost, unlock:u.ok, apply:u.ap});
+});
+GEN.forEach(function(g){
+  TIERS.forEach(function(t, i){
+    addUpg({id:'g:'+g.id+':'+i, name:g.name+': '+t.label.toLowerCase(), desc:'Виробіток цього типу ×'+t.m+'.', cost:g.cost*t.cost,
+      unlock:function(){ return (S.gens[g.id]||0)>=t.req; },
+      apply:function(m){ m.gen[g.id]=(m.gen[g.id]||1)*t.m; }});
+  });
+});
+function recalc(){
+  var m = {click:1, tariff:1, prod:1, batt:1, windFloor:false, tracker:false, gen:{}};
+  UPG.forEach(function(u){ if(S.upg[u.id]) u.apply(m); });
+  mods = m;
+}
+
+/* ---------- model ---------- */
+function hourOf(t){ return ((t % DAY) / DAY) * 24; }
+function bump(h, c, s){ var d = Math.abs(h - c); d = Math.min(d, 24 - d); return Math.exp(-(d*d) / (2*s*s)); }
+function curve(h){ return 0.42 + 0.26*bump(h,8,1.8) + 0.2*bump(h,13,2.6) + 0.52*bump(h,19.5,2.2); }
+function sunCurve(h){
+  if(h <= 6 || h >= 18) return 0;
+  var s = Math.sin(Math.PI*(h-6)/12);
+  return mods.tracker ? Math.pow(s, 0.55) : s;
+}
+function evDef(){ if(!S.event) return null; for(var i=0;i<EVENTS.length;i++){ if(EVENTS[i].id===S.event.id) return EVENTS[i]; } return null; }
+function env(){ var e = evDef() || {}; return {sun:e.sun||1, wind:e.wind||1, demand:e.demand||1}; }
+function sunNow(h){ return sunCurve(h) * env().sun; }
+function windNow(w){ return w * env().wind; }
+function supplyKW(h, wind){
+  var e = env(), sun = sunCurve(h)*e.sun, w = wind*e.wind, tot = 0;
+  for(var i=0;i<GEN.length;i++){
+    var g = GEN[i], n = S.gens[g.id]||0; if(!n) continue;
+    var f = g.src==='sun' ? sun : (g.src==='wind' ? w : 1);
+    tot += n * g.power * (mods.gen[g.id]||1) * f;
+  }
+  return tot * mods.prod * (1 + 0.1*S.sparks);
+}
+function demandKW(h){ return GRID[S.grid].demand * curve(h) * env().demand; }
+function price(h){ return (0.2 + 1.4*curve(h)) * mods.tariff; }
+function battCap(){ return S.batt * GRID[S.grid].demand * 5 * mods.batt; }
+function battCost(){ return 12 * GRID[S.grid].demand * Math.pow(1.2, S.batt); }
+function clickPower(){ return mods.click * (1 + 0.1*S.sparks) + cur.sup*0.01; }
+function clickEarn(){ return clickPower() * price(hourOf(S.t)); }
+function costN(base, c, n){ return base * Math.pow(R, c) * (Math.pow(R, n) - 1) / (R - 1); }
+function maxN(base, c, money){
+  var first = base * Math.pow(R, c); if(money < first) return 0;
+  var n = Math.floor(Math.log(1 + money*(R-1)/first) / Math.log(R));
+  while(n > 0 && costN(base, c, n) > money) n--;
+  return n;
+}
+function sparkGain(){ return Math.floor(Math.sqrt(S.run / 1e6)); }
+var REFORM_COST = [1e8, 2e9, 5e12];
+function reformCost(){ return REFORM_COST[eraIdx()]; }
+function reformReady(){ return S.grid >= GRID.length - 1 && S.money >= reformCost() && sparkGain() >= 1; }
+
+function step(dt){
+  S.t += dt; S.playtime += dt;
+  var h = hourOf(S.t);
+
+  S.windTimer -= dt;
+  if(S.windTimer <= 0){
+    S.windTimer = 8 + Math.random()*14;
+    var lo = mods.windFloor ? 0.5 : 0.1;
+    S.windT = lo + Math.random()*(1.5 - lo);
+  }
+  S.wind += (S.windT - S.wind) * Math.min(1, dt*0.25);
+
+  if(S.event){
+    S.event.left -= dt;
+    if(S.event.left <= 0){ S.event = null; S.evTimer = 55 + Math.random()*60; }
+  } else {
+    S.evTimer -= dt;
+    if(S.evTimer <= 0 && S.run > 20) startEvent();
+  }
+
+  if(tab === 'station' && !bolt && S.run > 30){
+    S.boltTimer -= dt;
+    if(S.boltTimer <= 0) spawnBolt();
+  }
+  if(bolt){ bolt.left -= dt; if(bolt.left <= 0) removeBolt(); }
+
+  var sup = supplyKW(h, S.wind), dem = demandKW(h);
+  var pe = sup*dt, de = dem*dt;
+  var sold = Math.min(pe, de), surplus = pe - sold, deficit = de - sold, waste = 0, charge = 0, dis = 0;
+  var cap = battCap();
+  if(S.stored > cap) S.stored = cap;
+  if(surplus > 0){ charge = Math.min(surplus, cap - S.stored); S.stored += charge; waste = surplus - charge; }
+  if(deficit > 0){ dis = Math.min(deficit, S.stored); S.stored -= dis; sold += dis; deficit -= dis; }
+  var earn = sold * price(h);
+  S.money += earn; S.run += earn; S.life += earn;
+
+  var k = Math.min(1, dt*1.5);
+  flow.waste   += (waste/dt   - flow.waste)   * k;
+  flow.charge  += (charge/dt  - flow.charge)  * k;
+  flow.dis     += (dis/dt     - flow.dis)     * k;
+  flow.deficit += (deficit/dt - flow.deficit) * k;
+  cur.sup = sup; cur.dem = dem;
+  cur.inc += (earn/dt - cur.inc) * k;
+  S.avg   += (earn/dt - S.avg) * Math.min(1, dt*0.05);
+}
+
+var lastT = performance.now();
+function tick(){
+  var now = performance.now(), dt = (now - lastT) / 1000; lastT = now;
+  if(dt > 600){ offline(dt); return; }
+  while(dt > 0){ var d = Math.min(dt, 0.25); step(d); dt -= d; }
+}
+function offline(secs){
+  var gain = S.avg * Math.min(secs, 14400) / 3;
+  S.t += secs;
+  if(gain > 1){ S.money += gain; S.run += gain; S.life += gain; toast('Поки тебе не було: +' + fmt(gain) + ' грн'); }
+}
+
+/* ---------- events & bonus ---------- */
+function startEvent(){
+  var pool = EVENTS.filter(function(e){ return !S.lastEv || e.id !== S.lastEv; });
+  var e = pool[Math.floor(Math.random()*pool.length)];
+  S.lastEv = e.id;
+  S.event = {id:e.id, left:e.dur};
+  toast(e.name + '. ' + e.text);
+}
+var BOLT_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4L13.5 2z"/></svg>';
+function spawnBolt(){
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'bolt'; b.innerHTML = BOLT_SVG;
+  b.setAttribute('aria-label', 'Блискавка: забрати бонус');
+  b.style.left = (10 + Math.random()*78) + '%';
+  b.style.top = (22 + Math.random()*55) + '%';
+  b.addEventListener('click', function(){
+    var gain = Math.max(cur.inc*40, clickEarn()*25);
+    S.money += gain; S.run += gain; S.life += gain;
+    toast('Блискавка! +' + fmt(gain) + ' грн');
+    removeBolt();
+  });
+  els.chartCard.appendChild(b);
+  bolt = {el:b, left:11};
+}
+function removeBolt(){
+  if(bolt && bolt.el.parentNode) bolt.el.parentNode.removeChild(bolt.el);
+  bolt = null; S.boltTimer = 50 + Math.random()*50;
+}
+
+/* ---------- formatting ---------- */
+var SUF = ['', ' тис.', ' млн', ' млрд', ' трлн', ' квадрлн'];
+function fmt(n){
+  if(!isFinite(n)) return '∞';
+  var neg = n < 0; n = Math.abs(n);
+  var i = 0;
+  if(n >= 1000){ i = Math.min(SUF.length-1, Math.floor(Math.log10(n)/3)); n = n / Math.pow(1000, i); }
+  var s = n < 10 ? n.toFixed(2) : (n < 100 ? n.toFixed(1) : n.toFixed(0));
+  if(i === 0 && n < 10 && n >= 1) s = n.toFixed(2);
+  return (neg ? '-' : '') + s.replace('.', ',') + SUF[i];
+}
+function powerStr(x){
+  if(x < 1000) return fmt(x) + ' кВт';
+  if(x < 1e6) return fmt(x/1e3) + ' МВт';
+  return fmt(x/1e6) + ' ГВт';
+}
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function clockStr(){
+  var h = hourOf(S.t);
+  return pad(Math.floor(h)) + ':' + pad(Math.floor((h % 1) * 60)) + ' · День ' + (Math.floor(S.t / DAY) + 1);
+}
+
+/* ---------- DOM refs ---------- */
+var els = {};
+['clock','money','rate','mSup','mDem','mBat','mBatBar','ev','evName','evText','evT','chart','chartCard','status','statusT','tap','tapwrap','tapSub','hint','toast'].forEach(function(id){ els[id] = document.getElementById(id); });
+var toastTimer = 0;
+function toast(msg){
+  els.toast.textContent = msg; els.toast.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ els.toast.classList.remove('on'); }, 2800);
+}
+
+/* ---------- tapping ---------- */
+function doTap(x, y){
+  var earn = clickEarn();
+  S.money += earn; S.run += earn; S.life += earn; S.clicks++;
+  var r = els.tapwrap.getBoundingClientRect();
+  var px = x == null ? r.width/2 : x - r.left, py = y == null ? 30 : y - r.top;
+  if(els.tapwrap.querySelectorAll('.fl').length < 12){
+    var f = document.createElement('span');
+    f.className = 'fl'; f.textContent = '+' + fmt(earn);
+    f.style.left = px + 'px'; f.style.top = py + 'px';
+    els.tapwrap.appendChild(f);
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 850);
+  }
+}
+els.tap.addEventListener('pointerdown', function(e){ e.preventDefault(); doTap(e.clientX, e.clientY); });
+els.tap.addEventListener('click', function(e){ if(e.detail === 0) doTap(null, null); });
+
+/* ---------- generators ---------- */
+var genRows = [];
+function buildGens(){
+  var box = document.getElementById('gen-list'); box.innerHTML = ''; genRows = [];
+  GEN.forEach(function(g){
+    var r = document.createElement('div'); r.className = 'row'; r.hidden = true;
+    r.innerHTML = '<div class="row-main"><div class="row-name"><span class="nm"></span><span class="cnt"></span></div><div class="row-desc"></div><div class="row-stat"></div></div><button type="button" class="buy"><span class="b1"></span><span class="b2"></span></button>';
+    r.querySelector('.nm').textContent = g.name;
+    r.querySelector('.row-desc').textContent = g.desc;
+    var o = {g:g, row:r, cnt:r.querySelector('.cnt'), stat:r.querySelector('.row-stat'), btn:r.querySelector('.buy'), b1:r.querySelector('.b1'), b2:r.querySelector('.b2')};
+    o.btn.addEventListener('click', function(){ buyGen(g); });
+    box.appendChild(r); genRows.push(o);
+  });
+}
+function genBuyN(g){
+  var c = S.gens[g.id]||0;
+  if(qty === 'max') return Math.max(1, maxN(g.cost, c, S.money));
+  return parseInt(qty, 10);
+}
+function buyGen(g){
+  var c = S.gens[g.id]||0, n = genBuyN(g), cost = costN(g.cost, c, n);
+  if(S.money < cost) return;
+  S.money -= cost; S.gens[g.id] = c + n;
+  updateGens(); rebuildUpg(false);
+}
+function updateGens(){
+  var maxOwned = -1, h = hourOf(S.t);
+  GEN.forEach(function(g, i){ if((S.gens[g.id]||0) > 0) maxOwned = i; });
+  genRows.forEach(function(o, i){
+    var g = o.g, c = S.gens[g.id]||0, visible = (g.era||0) <= eraIdx() && i <= maxOwned + 1;
+    o.row.hidden = !visible; if(!visible) return;
+    o.cnt.textContent = c ? '×' + c : '';
+    var per = g.power * (mods.gen[g.id]||1) * mods.prod * (1 + 0.1*S.sparks);
+    var txt = c ? 'Дає ' + powerStr(per) + ' кожен · разом ' + powerStr(per*c) : 'Дасть ' + powerStr(per) + ' кожен';
+    if(g.src === 'sun') txt += ' · зараз ' + Math.round(sunNow(h)*100) + '%';
+    if(g.src === 'wind') txt += ' · зараз ' + Math.round(windNow(S.wind)*100) + '%';
+    o.stat.textContent = txt;
+    var n = genBuyN(g), cost = costN(g.cost, c, n);
+    o.b1.textContent = 'Купити ×' + n;
+    o.b2.textContent = fmt(cost) + ' грн';
+    o.btn.disabled = S.money < cost;
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll('#qty button'), function(b){
+  b.addEventListener('click', function(){
+    qty = b.getAttribute('data-q');
+    Array.prototype.forEach.call(document.querySelectorAll('#qty button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+    updateGens();
+  });
+});
+
+/* ---------- grid & batteries ---------- */
+var pipsBox = document.getElementById('pips');
+function buildPips(){
+  pipsBox.innerHTML = '';
+  for(var i = 0; i < GRID.length; i++) pipsBox.appendChild(document.createElement('span'));
+}
+function updateGrid(){
+  var g = GRID[S.grid];
+  document.getElementById('gridEra').textContent = 'Підключено · епоха «' + ERAS[eraIdx()].name + '»';
+  document.getElementById('gridName').textContent = g.name;
+  document.getElementById('gridSub').textContent = 'Піковий попит ' + powerStr(g.demand);
+  Array.prototype.forEach.call(pipsBox.children, function(p, i){ p.className = i <= S.grid ? 'on' : ''; });
+  var next = GRID[S.grid + 1], row = document.getElementById('gridNext');
+  if(next){
+    row.hidden = false;
+    document.getElementById('gnName').textContent = next.name;
+    document.getElementById('gnDesc').textContent = 'Піковий попит ' + powerStr(next.demand) + ' (зараз ' + powerStr(g.demand) + ').';
+    document.getElementById('gnCost').textContent = fmt(next.cost) + ' грн';
+    document.getElementById('gnBuy').disabled = S.money < next.cost;
+  } else row.hidden = true;
+  document.getElementById('bCnt').textContent = S.batt ? '×' + S.batt : '';
+  document.getElementById('bStat').textContent = 'Ємність ' + fmt(battCap()) + ' кВт·год · +' + fmt(GRID[S.grid].demand*5*mods.batt) + ' за штуку';
+  document.getElementById('bCost').textContent = fmt(battCost()) + ' грн';
+  document.getElementById('bBuy').disabled = S.money < battCost();
+}
+document.getElementById('gnBuy').addEventListener('click', function(){
+  var next = GRID[S.grid + 1]; if(!next || S.money < next.cost) return;
+  S.money -= next.cost; S.grid++; toast('Підключено: ' + next.name); updateGrid();
+});
+document.getElementById('bBuy').addEventListener('click', function(){
+  var c = battCost(); if(S.money < c) return;
+  S.money -= c; S.batt++; updateGrid();
+});
+
+/* ---------- upgrades ---------- */
+var upgRows = [], upgKey = '';
+function visibleUpg(){ return UPG.filter(function(u){ return !S.upg[u.id] && u.unlock(); }).sort(function(a, b){ return a.cost - b.cost; }); }
+function rebuildUpg(force){
+  var list = visibleUpg(), key = list.map(function(u){ return u.id; }).join(',');
+  if(!force && key === upgKey) return;
+  upgKey = key;
+  var box = document.getElementById('upg-list'); box.innerHTML = ''; upgRows = [];
+  if(!list.length){
+    box.innerHTML = '<div class="empty">Нових покращень поки немає. Купуй генератори й підключай більші райони, і вони з\'являться.</div>';
+    return;
+  }
+  list.forEach(function(u){
+    var r = document.createElement('div'); r.className = 'row';
+    r.innerHTML = '<div class="row-main"><div class="row-name"><span class="nm"></span></div><div class="row-desc"></div></div><button type="button" class="buy"><span class="b1">Купити</span><span class="b2"></span></button>';
+    r.querySelector('.nm').textContent = u.name;
+    r.querySelector('.row-desc').textContent = u.desc;
+    var btn = r.querySelector('.buy');
+    r.querySelector('.b2').textContent = fmt(u.cost) + ' грн';
+    btn.addEventListener('click', function(){
+      if(S.money < u.cost || S.upg[u.id]) return;
+      S.money -= u.cost; S.upg[u.id] = 1; recalc(); rebuildUpg(false); updateGens();
+    });
+    box.appendChild(r); upgRows.push({u:u, btn:btn});
+  });
+}
+function updateUpg(){ upgRows.forEach(function(o){ o.btn.disabled = S.money < o.u.cost; }); }
+
+/* ---------- reform ---------- */
+var reformArmed = false;
+function renderReform(){
+  var gain = sparkGain();
+  document.getElementById('eraName').textContent = ERAS[eraIdx()].name;
+  var nextEra = S.resets + 1;
+  document.getElementById('eraNext').textContent = nextEra < ERAS.length
+    ? 'Наступна реформа відкриє епоху: ' + ERAS[nextEra].text
+    : 'Усі епохи відкрито. Далі реформи дають лише іскри.';
+  document.getElementById('sparks').textContent = S.sparks;
+  document.getElementById('sparkBonus').textContent = '+' + (S.sparks*10) + '% до виробітку й натискань';
+  document.getElementById('stLife').textContent = fmt(S.life) + ' грн';
+  document.getElementById('stRun').textContent = fmt(S.run) + ' грн';
+  document.getElementById('stClicks').textContent = S.clicks;
+  document.getElementById('stTime').textContent = Math.floor(S.playtime/60) + ' хв';
+  document.getElementById('stResets').textContent = S.resets;
+  var box = document.getElementById('reformBtns');
+  var top = GRID[GRID.length - 1], need = reformCost();
+  var maxed = S.grid >= GRID.length - 1, rich = S.money >= need, ready = maxed && rich && gain >= 1;
+  document.getElementById('reformReq').textContent = 'Умови реформи: 1) підключити «' + top.name + '» (зараз «' + GRID[S.grid].name + '»), ' +
+    '2) мати на рахунку ' + fmt(need) + ' грн (зараз ' + fmt(S.money) + ').';
+  var sig = gain + ':' + reformArmed + ':' + maxed + ':' + rich;
+  if(box.getAttribute('data-sig') === sig) return;
+  box.setAttribute('data-sig', sig); box.innerHTML = '';
+  if(!ready){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.disabled = true;
+    b.textContent = !maxed ? 'Підключи «' + top.name + '»' : 'Потрібно ' + fmt(need) + ' грн на рахунку';
+    box.appendChild(b);
+  } else if(!reformArmed){
+    var a = document.createElement('button'); a.type = 'button'; a.className = 'btn';
+    a.textContent = 'Реформа: +' + gain + ' іск.';
+    a.addEventListener('click', function(){ reformArmed = true; renderReform(); });
+    box.appendChild(a);
+  } else {
+    var y = document.createElement('button'); y.type = 'button'; y.className = 'btn danger'; y.textContent = 'Так, почати заново';
+    y.addEventListener('click', doReform);
+    var n = document.createElement('button'); n.type = 'button'; n.className = 'btn ghost'; n.textContent = 'Скасувати';
+    n.addEventListener('click', function(){ reformArmed = false; renderReform(); });
+    box.appendChild(y); box.appendChild(n);
+  }
+}
+function doReform(){
+  var gain = sparkGain(); if(!reformReady()) return;
+  var keep = {sparks:S.sparks + gain, life:S.life, clicks:S.clicks, resets:S.resets + 1, playtime:S.playtime};
+  S = Object.assign(fresh(), keep);
+  reformArmed = false; flow = {waste:0, charge:0, dis:0, deficit:0}; cur = {sup:0, dem:0, inc:0};
+  setEra(); buildPips();
+  removeBolt(); recalc(); buildGens(); rebuildUpg(true); updateGens(); updateGrid();
+  var eraNote = S.resets <= ERAS.length - 1 ? ' Нова епоха: ' + ERAS[eraIdx()].name + '.' : '';
+  toast('Реформа проведена. Іскор: ' + S.sparks + '.' + eraNote);
+  save(); showTab('station');
+}
+
+/* ---------- full wipe ---------- */
+function renderWipe(armed){
+  var box = document.getElementById('wipe'); box.innerHTML = '';
+  if(!armed){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn danger';
+    b.textContent = 'Скинути весь прогрес';
+    b.addEventListener('click', function(){ renderWipe(true); });
+    box.appendChild(b);
+    return;
+  }
+  var q = document.createElement('div'); q.className = 'wipe-q';
+  q.textContent = 'Ви впевнені? Усе буде видалено разом з іскрами й епохами. Бонусу за скидання немає, гра почнеться з нуля.';
+  var row = document.createElement('div'); row.className = 'wipe-row';
+  var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn danger'; yes.textContent = 'Так, скинути';
+  yes.addEventListener('click', wipeAll);
+  var no = document.createElement('button'); no.type = 'button'; no.className = 'btn ghost'; no.textContent = 'Ні, залишити';
+  no.addEventListener('click', function(){ renderWipe(false); });
+  row.appendChild(yes); row.appendChild(no);
+  box.appendChild(q); box.appendChild(row);
+}
+function wipeAll(){
+  S = fresh();
+  reformArmed = false; flow = {waste:0, charge:0, dis:0, deficit:0}; cur = {sup:0, dem:0, inc:0}; yMax = 0;
+  removeBolt(); setEra(); recalc(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  save(); renderWipe(false); showTab('station');
+  toast('Прогрес скинуто. Починаємо спочатку.');
+}
+
+/* ---------- chart ---------- */
+var cs = getComputedStyle(document.documentElement);
+var C = {};
+['supply','demand','warn','line','muted','fg'].forEach(function(k){ C[k] = cs.getPropertyValue('--' + k).trim(); });
+var yMax = 0;
+function drawChart(){
+  var cv = els.chart, dpr = window.devicePixelRatio || 1;
+  var W = cv.clientWidth, H = cv.clientHeight; if(!W || !H) return;
+  var bw = Math.round(W*dpr), bh = Math.round(H*dpr);
+  if(cv.width !== bw || cv.height !== bh){ cv.width = bw; cv.height = bh; }
+  var g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  var padT = 10, padB = 20, ph = H - padT - padB, base = padT + ph;
+  var N = Math.max(48, Math.round(W/3)), sA = [], dA = [], mx = 0, i;
+  for(i = 0; i <= N; i++){
+    var hh = i/N*24, s = supplyKW(hh, S.wind), d = demandKW(hh);
+    sA.push(s); dA.push(d); if(s > mx) mx = s; if(d > mx) mx = d;
+  }
+  mx = Math.max(mx*1.15, 1);
+  yMax = yMax ? yMax + (mx - yMax)*0.12 : mx;
+  function Y(v){ return padT + ph - Math.min(v/yMax, 1)*ph; }
+
+  g.font = '500 10px "IBM Plex Mono", monospace'; g.textBaseline = 'alphabetic';
+  g.strokeStyle = C.line; g.fillStyle = C.muted; g.lineWidth = 1;
+  [0, 6, 12, 18, 24].forEach(function(hr){
+    var x = Math.round(hr/24*W) + 0.5;
+    g.beginPath(); g.moveTo(x, padT); g.lineTo(x, base); g.stroke();
+    g.textAlign = hr === 0 ? 'left' : (hr === 24 ? 'right' : 'center');
+    g.fillText(hr + ':00', hr === 0 ? 0 : (hr === 24 ? W : x), H - 5);
+  });
+  g.beginPath(); g.moveTo(0, base + 0.5); g.lineTo(W, base + 0.5); g.stroke();
+
+  var cw = W/N;
+  for(i = 0; i < N; i++){
+    var x0 = i*cw, sv = sA[i], dv = dA[i], m = Math.min(sv, dv);
+    if(m > 0){ g.globalAlpha = 0.5; g.fillStyle = C.supply; g.fillRect(x0, Y(m), cw + 0.6, base - Y(m)); }
+    if(sv > dv){ g.globalAlpha = 0.3; g.fillStyle = C.warn; g.fillRect(x0, Y(sv), cw + 0.6, Y(dv) - Y(sv)); }
+    else if(dv > sv){ g.globalAlpha = 0.16; g.fillStyle = C.demand; g.fillRect(x0, Y(dv), cw + 0.6, Y(sv) - Y(dv)); }
+  }
+  g.globalAlpha = 1; g.lineWidth = 2; g.lineJoin = 'round';
+  function line(arr, col){
+    g.strokeStyle = col; g.beginPath();
+    for(var j = 0; j <= N; j++){ var x = j*cw, y = Y(arr[j]); if(j) g.lineTo(x, y); else g.moveTo(x, y); }
+    g.stroke();
+  }
+  line(dA, C.demand); line(sA, C.supply);
+
+  var hn = hourOf(S.t), nx = hn/24*W, sn = supplyKW(hn, S.wind), dn = demandKW(hn);
+  g.strokeStyle = C.fg; g.lineWidth = 1; g.setLineDash([3, 3]);
+  g.beginPath(); g.moveTo(nx, padT); g.lineTo(nx, base); g.stroke(); g.setLineDash([]);
+  [[dn, C.demand], [sn, C.supply]].forEach(function(p){
+    g.fillStyle = p[1]; g.strokeStyle = C.fg; g.lineWidth = 2;
+    g.beginPath(); g.arc(nx, Y(p[0]), 4, 0, Math.PI*2); g.fill(); g.stroke();
+  });
+}
+
+/* ---------- render ---------- */
+function renderStatus(){
+  var k = 'ok', t;
+  var dm = Math.max(cur.dem, 0.1);
+  if(flow.waste > 0.05*dm){ k = 'warn'; t = 'Надлишок пропадає. Підключи більший район або купи акумулятори.'; }
+  else if(flow.charge > 0.05*dm){ k = 'ok'; t = 'Зайву енергію складаємо в акумулятори.'; }
+  else if(flow.dis > 0.05*dm){ k = 'ok'; t = 'Акумулятори покривають нестачу виробітку.'; }
+  else if(cur.sup < cur.dem*0.98){ k = 'dem'; t = 'Попит вищий за виробіток. Усе продається, додай генераторів.'; }
+  else { t = 'Баланс: виробіток відповідає попиту.'; }
+  els.status.setAttribute('data-k', k);
+  if(els.statusT.textContent !== t) els.statusT.textContent = t;
+}
+function render(){
+  els.clock.textContent = clockStr();
+  els.money.textContent = fmt(S.money);
+  els.rate.textContent = '+' + fmt(cur.inc) + ' грн/с';
+  els.mSup.textContent = powerStr(cur.sup);
+  els.mDem.textContent = powerStr(cur.dem);
+  var cap = battCap();
+  els.mBat.textContent = cap > 0 ? Math.round(S.stored/cap*100) + '%' : '—';
+  els.mBatBar.style.width = cap > 0 ? (S.stored/cap*100) + '%' : '0%';
+
+  if(tab === 'station'){
+    var e = evDef();
+    if(e){
+      els.ev.hidden = false; els.evName.textContent = e.name; els.evText.textContent = e.text;
+      els.evT.textContent = Math.ceil(S.event.left) + ' с';
+    } else els.ev.hidden = true;
+    els.tapSub.textContent = '+' + fmt(clickEarn()) + ' грн за натискання';
+    els.hint.hidden = S.run > 80 || Object.keys(S.gens).length > 0;
+    renderStatus(); drawChart();
+  } else if(tab === 'gen') updateGens();
+  else if(tab === 'grid') updateGrid();
+  else if(tab === 'upg'){ rebuildUpg(false); updateUpg(); }
+  else if(tab === 'reform') renderReform();
+}
+var lastDot = 0;
+function updateDots(){
+  var dots = document.querySelectorAll('.tabbtn .dotn');
+  var maxOwned = -1;
+  GEN.forEach(function(g, i){ if((S.gens[g.id]||0) > 0) maxOwned = i; });
+  var gen = GEN.some(function(g, i){ return (g.era||0) <= eraIdx() && i <= maxOwned + 1 && S.money >= costN(g.cost, S.gens[g.id]||0, 1); });
+  var next = GRID[S.grid + 1];
+  var grid = (next && S.money >= next.cost) || S.money >= battCost();
+  var upg = visibleUpg().some(function(u){ return S.money >= u.cost; });
+  var reform = reformReady();
+  var flags = [false, gen, grid, upg, reform];
+  Array.prototype.forEach.call(dots, function(d, i){ d.hidden = !flags[i] || (document.querySelectorAll('.tabbtn')[i].getAttribute('aria-selected') === 'true'); });
+}
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  tab = t;
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(s){ s.hidden = s.id !== 'tab-' + t; });
+  Array.prototype.forEach.call(document.querySelectorAll('.tabbtn'), function(b){ b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === t)); });
+  window.scrollTo(0, 0);
+  if(t === 'upg') rebuildUpg(true);
+  if(t === 'reform'){ reformArmed = false; document.getElementById('reformBtns').removeAttribute('data-sig'); renderWipe(false); }
+  render(); updateDots();
+}
+Array.prototype.forEach.call(document.querySelectorAll('.tabbtn'), function(b){
+  b.addEventListener('click', function(){ showTab(b.getAttribute('data-tab')); });
+});
+
+/* ---------- save / boot ---------- */
+function save(){ try{ S.last = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{ var raw = localStorage.getItem(SAVE_KEY); if(!raw) return null; return Object.assign(fresh(), JSON.parse(raw)); }
+  catch(e){ return null; }
+}
+function start(data){
+  var fromHot = data && data.S;
+  S = fromHot ? Object.assign(fresh(), data.S) : (load() || fresh());
+  setEra(); recalc(); buildGens(); buildPips(); rebuildUpg(true); updateGens(); updateGrid();
+  if(!fromHot){ var away = (Date.now() - S.last)/1000; if(away > 30) offline(away); }
+  lastT = performance.now();
+  setInterval(tick, 100);
+  setInterval(save, 5000);
+  setInterval(updateDots, 500);
+  var lastR = 0;
+  (function loop(ts){ if(ts - lastR >= 90){ lastR = ts; render(); } requestAnimationFrame(loop); })(0);
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+  showTab('station');
+}
+var hot = window.claude && window.claude.hot;
+try{ if(hot && hot.snapshot) hot.snapshot(function(){ return {S:S}; }); }catch(e){}
+if(hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+
+</body>
+</html>
