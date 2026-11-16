@@ -426,6 +426,32 @@ var EN = {
   'Фінал на стадіоні':'Stadium final', 'Прожектори й трансляції. Попит +70%.':'Floodlights and broadcasts. Demand +70%.',
   'Мороз':'Frost', 'Увімкнули опалення. Попит +35%, вітер сильніший.':'Heating is on. Demand +35%, stronger wind.',
 
+  'Вакуумний генератор':'Vacuum generator', 'Енергія з порожнечі, яка зовсім не порожня.':'Energy from a void that is not empty at all.',
+  'Двигун чорної діри':'Black hole engine', 'Забирає енергію в самої чорної діри.':'Takes energy from the black hole itself.',
+  'Міжсвітовий міст':'Interworld bridge', 'Тягне енергію з сусідніх всесвітів.':'Draws power from neighboring universes.',
+  'Хроно-реактор':'Chrono reactor', 'Працює на часі, якого завжди бракує.':'Runs on the time you never have enough of.',
+  'Великий вибух у пляшці':'Big Bang in a bottle', 'Тримати подалі від відкритого вогню.':'Keep away from open flame.',
+  'Омега-реактор':'Omega reactor', 'Остання крапка в енергетиці.':'The final word in energy.',
+
+  'Кишенькова реальність':'Pocket reality', 'Паралельна кімната':'Parallel room', 'Дзеркальне місто':'Mirror city',
+  'Альтернативна Земля':'Alternate Earth', 'Світ без гравітації':'Zero-gravity world', 'Світ вічної ночі':'World of eternal night',
+  'Світ-океан':'Ocean world', 'Квантова колонія':'Quantum colony', 'Мережа паралельних світів':'Parallel world network',
+  'Світи-близнюки':'Twin worlds', 'Світ кіберімперій':'Cyber empire world', 'Космос без зірок':'Starless cosmos',
+  'Світ чистої енергії':'Pure energy world', 'Вузол мультивсесвіту':'Multiverse hub', 'Ядро мультивсесвіту':'Multiverse core',
+  'Бульбашка інфляції':'Inflation bubble', 'Брама реальностей':'Gate of realities',
+  'Годинникова майстерня':'Clockwork workshop', 'Вежа часу':'Time tower', 'Місто-годинник':'Clock city', 'Часова петля':'Time loop',
+  'Машина часу':'Time machine', 'Хронобанк':'Chrono bank', 'Архів епох':'Archive of ages', 'Палац вічності':'Palace of eternity',
+  'Епоха динозаврів':'Age of dinosaurs', 'Золота доба':'Golden age', 'Імперія часів':'Empire of times', 'Хрономережа':'Chrono network',
+  'Темпоральний ШІ':'Temporal AI', 'Вузол причинності':'Causality knot', 'Фабрика парадоксів':'Paradox factory',
+  'Зворотний відлік':'Countdown', 'Тепловий кінець всесвіту':'Heat death of the universe', 'Новий Великий вибух':'New Big Bang',
+  'Кінець часів':'End of times',
+
+  'Мультивсесвіт':'Multiverse', 'Вічність':'Eternity',
+  'Мультивсесвіт. Енергію споживатимуть паралельні світи й цілі реальності. Нові генератори: вакуумний генератор, двигун чорної діри, міжсвітовий міст.':
+    'Multiverse. Parallel worlds and whole realities will use the energy. New generators: vacuum generator, black hole engine, interworld bridge.',
+  'Вічність. Енергію споживають час і сама реальність. Нові генератори: хроно-реактор, Великий вибух у пляшці, омега-реактор.':
+    'Eternity. Time and reality itself use the energy. New generators: chrono reactor, Big Bang in a bottle, omega reactor.',
+
   'Обслуговування':'Maintenance', 'Модернізація':'Modernization', 'Капремонт':'Overhaul', 'Автоматизація':'Automation',
 
   'Тренування ніг':'Leg training', 'Рукавиці з гелем':'Gel gloves', 'Рекуператор':'Recuperator',
@@ -458,7 +484,13 @@ var GEN = [
   {id:'plas', era:1, name:'Плазмовий реактор',       desc:'Гарячіше, ніж у центрі зорі.',              cost:5.2e11, power:1.85e7, src:'flat'},
   {id:'anti', era:2, name:'Антиматерійний реактор',  desc:'Склянка пального дорівнює цілій станції.',  cost:6.2e12, power:1.2e8, src:'flat'},
   {id:'neut', era:2, name:'Нейтронна зоря',          desc:'Дуже щільно, дуже гаряче, дуже потужно.',   cost:7.5e13, power:7.7e8, src:'flat'},
-  {id:'dys',  era:2, name:'Сфера Дайсона',           desc:'Уся енергія зорі працює на тебе.',          cost:9e14,   power:5e9,   src:'flat'}
+  {id:'dys',  era:2, name:'Сфера Дайсона',           desc:'Уся енергія зорі працює на тебе.',          cost:9e14,   power:5e9,   src:'flat'},
+  {id:'vac',    era:3, name:'Вакуумний генератор',   desc:'Енергія з порожнечі, яка зовсім не порожня.', cost:1.1e16, power:3.2e10, src:'flat'},
+  {id:'bh',     era:3, name:'Двигун чорної діри',    desc:'Забирає енергію в самої чорної діри.',        cost:1.3e17, power:2.1e11, src:'flat'},
+  {id:'mult',   era:3, name:'Міжсвітовий міст',      desc:'Тягне енергію з сусідніх всесвітів.',         cost:1.6e18, power:1.35e12, src:'flat'},
+  {id:'chrono', era:4, name:'Хроно-реактор',         desc:'Працює на часі, якого завжди бракує.',        cost:1.9e19, power:8.8e12, src:'flat'},
+  {id:'big',    era:4, name:'Великий вибух у пляшці', desc:'Тримати подалі від відкритого вогню.',       cost:2.3e20, power:5.7e13, src:'flat'},
+  {id:'omega',  era:4, name:'Омега-реактор',         desc:'Остання крапка в енергетиці.',                cost:2.8e21, power:3.7e14, src:'flat'}
 ];
 var GRID0 = [
   {name:'Хутір',        demand:4,      cost:0},
@@ -472,11 +504,12 @@ var GRID0 = [
   {name:'Регіон',       demand:150000, cost:2.7e6},
   {name:'Країна',       demand:700000, cost:1.2e7}
 ];
-function ladder(rows){
+function ladder(rows, k){
+  k = k || 80;
   return rows.map(function(r, i){
     var cost = 0;
     if(i === 1) cost = 120;
-    else if(i > 1) cost = Number((80 * rows[i-1][1]).toPrecision(2));
+    else if(i > 1) cost = Number((k * rows[i-1][1]).toPrecision(2));
     return {name:r[0], demand:r[1], cost:cost};
   });
 }
@@ -491,11 +524,24 @@ var GRID2 = ladder([
   ['Міжзоряна колонія', 7e6], ['Скупчення зірок', 4e7], ['Імперія Кардашова', 2.5e8],
   ['Галактичний розум', 1.5e9], ['Мережа галактик', 9e9], ['Симуляція всесвіту', 5e10]
 ]);
-var GRIDS = [GRID0, GRID1, GRID2];
+function geoGrid(names, top, k){
+  var n = names.length, rows = [], r = Math.pow(top/4, 1/(n-1));
+  for(var i = 0; i < n; i++) rows.push([names[i], i === 0 ? 4 : Number((4*Math.pow(r, i)).toPrecision(2))]);
+  return ladder(rows, k);
+}
+var GRID3 = geoGrid(['Кишенькова реальність', 'Паралельна кімната', 'Дзеркальне місто', 'Альтернативна Земля', 'Світ без гравітації',
+  'Світ вічної ночі', 'Світ-океан', 'Квантова колонія', 'Мережа паралельних світів', 'Світи-близнюки', 'Світ кіберімперій',
+  'Космос без зірок', 'Світ чистої енергії', 'Вузол мультивсесвіту', 'Ядро мультивсесвіту', 'Бульбашка інфляції', 'Брама реальностей'], 1e13, 200);
+var GRID4 = geoGrid(['Годинникова майстерня', 'Вежа часу', 'Місто-годинник', 'Часова петля', 'Машина часу', 'Хронобанк', 'Архів епох',
+  'Палац вічності', 'Епоха динозаврів', 'Золота доба', 'Імперія часів', 'Хрономережа', 'Темпоральний ШІ', 'Вузол причинності',
+  'Фабрика парадоксів', 'Зворотний відлік', 'Тепловий кінець всесвіту', 'Новий Великий вибух', 'Кінець часів'], 3e15, 200);
+var GRIDS = [GRID0, GRID1, GRID2, GRID3, GRID4];
 var ERAS = [
   {name:'Міста',     text:''},
   {name:'Індустрія', text:'Індустрія. Замість міст енергію споживатимуть цехи, заводи, дата-центри й корпорації ШІ. Нові генератори: геотермальна станція, приливна електростанція, плазмовий реактор.'},
-  {name:'Космос',    text:'Космос. Місячні бази, колонії на Марсі й зоряні імперії. Нові генератори: антиматерійний реактор, нейтронна зоря, сфера Дайсона.'}
+  {name:'Космос',    text:'Космос. Місячні бази, колонії на Марсі й зоряні імперії. Нові генератори: антиматерійний реактор, нейтронна зоря, сфера Дайсона.'},
+  {name:'Мультивсесвіт', text:'Мультивсесвіт. Енергію споживатимуть паралельні світи й цілі реальності. Нові генератори: вакуумний генератор, двигун чорної діри, міжсвітовий міст.'},
+  {name:'Вічність',      text:'Вічність. Енергію споживають час і сама реальність. Нові генератори: хроно-реактор, Великий вибух у пляшці, омега-реактор.'}
 ];
 var GRID = GRID0;
 function eraIdx(){ return Math.min(S.resets, GRIDS.length - 1); }
@@ -601,7 +647,7 @@ function maxN(base, c, money){
   return n;
 }
 function sparkGain(){ return Math.floor(Math.sqrt(S.run / 1e6)); }
-var REFORM_COST = [1e8, 2e9, 5e12];
+var REFORM_COST = [1e8, 2e9, 5e12, 3e15, 8e17];
 function reformCost(){ return REFORM_COST[eraIdx()]; }
 function reformReady(){ return S.grid >= GRID.length - 1 && S.money >= reformCost() && sparkGain() >= 1; }
 
@@ -693,8 +739,8 @@ function removeBolt(){
 }
 
 /* ---------- formatting ---------- */
-var SUF_UK = ['', ' тис.', ' млн', ' млрд', ' трлн', ' квадрлн'];
-var SUF_EN = ['', 'K', 'M', 'B', 'T', 'Qa'];
+var SUF_UK = ['', ' тис.', ' млн', ' млрд', ' трлн', ' квадрлн', ' квінтлн', ' секстлн', ' септлн'];
+var SUF_EN = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp'];
 function SUFS(){ return LANG === 'en' ? SUF_EN : SUF_UK; }
 function fmt(n){
   if(!isFinite(n)) return '∞';
