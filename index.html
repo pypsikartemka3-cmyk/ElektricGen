@@ -293,12 +293,19 @@ main{padding:14px 0 104px}
     <section class="tab" id="tab-set" hidden>
       <div class="toolbar"><h2 data-en="Settings">Налаштування</h2></div>
       <div class="lead">
-        <div class="lead-k" data-en="Language and currency">Мова й валюта</div>
+        <div class="lead-k" data-en="Language">Мова</div>
         <div class="seg" id="langSeg">
-          <button type="button" data-l="uk" aria-pressed="true">Українська · грн</button>
-          <button type="button" data-l="en" aria-pressed="false">English · $</button>
+          <button type="button" data-l="uk" aria-pressed="true">Українська</button>
+          <button type="button" data-l="en" aria-pressed="false">English</button>
         </div>
-        <p class="note" data-en="English also switches hryvnias to dollars at the National Bank of Ukraine rate. The rate updates once a day.">Англійська мова змінює і валюту: гривні на долари за курсом НБУ. Курс оновлюється раз на день.</p>
+      </div>
+      <div class="lead">
+        <div class="lead-k" data-en="Currency">Валюта</div>
+        <div class="seg" id="curSeg">
+          <button type="button" data-c="uah" aria-pressed="true" data-en="Hryvnia · UAH">Гривня · грн</button>
+          <button type="button" data-c="usd" aria-pressed="false" data-en="Dollar · $">Долар · $</button>
+        </div>
+        <p class="note" data-en="Dollars use the National Bank of Ukraine rate. The rate updates once a day.">Долари рахуються за курсом НБУ. Курс оновлюється раз на день.</p>
         <p class="note" id="rateInfo" style="margin-top:6px"></p>
       </div>
       <div class="dev" id="devBox">
@@ -337,6 +344,11 @@ var LANG = 'uk';
 try{ if(localStorage.getItem(LANG_KEY) === 'en') LANG = 'en'; }catch(e){}
 function T(uk, en){ return LANG === 'en' ? en : uk; }
 
+/* ---------- currency (separate from language) ---------- */
+var CUR_KEY = 'dyspetcher-cur';
+var CUR = LANG === 'en' ? 'usd' : 'uah';   // players who already chose English keep dollars
+try{ var savedCur = localStorage.getItem(CUR_KEY); if(savedCur === 'usd' || savedCur === 'uah') CUR = savedCur; }catch(e){}
+
 /* ---------- exchange rate (NBU), refreshed at most once a day ---------- */
 var RATE_KEY = 'dyspetcher-rate';
 var RATE = 45.38, RATE_DATE = '13.11.2026', RATE_AT = 0;   // fallback: NBU rate for 13.11.2026
@@ -366,7 +378,7 @@ function refreshRate(){
       .catch(function(){});
   }catch(e){}
 }
-function cv(n){ return LANG === 'en' ? n / RATE : n; }
+function cv(n){ return CUR === 'usd' ? n / RATE : n; }
 var EN = {
   'Динамо-велосипед':'Dynamo bike', 'Хтось крутить педалі, і світло не гасне.':'Someone pedals so the lights stay on.',
   'Сонячна панель':'Solar panel', 'Працює вдень, уночі відпочиває.':'Works by day, rests at night.',
@@ -691,7 +703,7 @@ function powerStr(x){
   if(x < 1e6) return fmt(x/1e3) + ' ' + u[1];
   return fmt(x/1e6) + ' ' + u[2];
 }
-function mny(n){ return LANG === 'en' ? '$' + fmt(cv(n)) : fmt(n) + ' грн'; }
+function mny(n){ return CUR === 'usd' ? '$' + fmt(cv(n)) : fmt(n) + T(' грн', ' UAH'); }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function clockStr(){
   var h = hourOf(S.t);
@@ -860,7 +872,7 @@ function renderReform(){
   document.getElementById('reformReq').textContent = T(
     'Умови реформи: 1) підключити «' + X(top.name) + '» (зараз «' + X(GRID[S.grid].name) + '»), 2) мати на рахунку ' + mny(need) + ' (зараз ' + mny(S.money) + ').',
     'Reform requirements: 1) connect “' + X(top.name) + '” (now “' + X(GRID[S.grid].name) + '”), 2) have ' + mny(need) + ' on hand (now ' + mny(S.money) + ').');
-  var sig = gain + ':' + reformArmed + ':' + maxed + ':' + rich + ':' + LANG;
+  var sig = gain + ':' + reformArmed + ':' + maxed + ':' + rich + ':' + LANG + ':' + CUR;
   if(box.getAttribute('data-sig') === sig) return;
   box.setAttribute('data-sig', sig); box.innerHTML = '';
   if(!ready){
@@ -991,7 +1003,7 @@ function renderStatus(){
 function render(){
   els.clock.textContent = clockStr();
   els.money.textContent = fmt(cv(S.money));
-  els.rate.textContent = T('+' + fmt(cur.inc) + ' грн/с', '+$' + fmt(cv(cur.inc)) + '/s');
+  els.rate.textContent = '+' + mny(cur.inc) + T('/с', '/s');
   els.mSup.textContent = powerStr(cur.sup);
   els.mDem.textContent = powerStr(cur.dem);
   var cap = battCap();
@@ -1004,7 +1016,7 @@ function render(){
       els.ev.hidden = false; els.evName.textContent = X(e.name); els.evText.textContent = X(e.text);
       els.evT.textContent = Math.ceil(S.event.left) + T(' с', ' s');
     } else els.ev.hidden = true;
-    els.tapSub.textContent = T('+' + fmt(clickEarn()) + ' грн за натискання', '+$' + fmt(cv(clickEarn())) + ' per tap');
+    els.tapSub.textContent = '+' + mny(clickEarn()) + T(' за натискання', ' per tap');
     els.hint.hidden = S.run > 80 || Object.keys(S.gens).length > 0;
     renderStatus(); drawChart();
   } else if(tab === 'gen') updateGens();
@@ -1034,12 +1046,15 @@ function applyStatic(){
   });
   document.documentElement.lang = LANG === 'en' ? 'en' : 'uk';
   try{ document.title = T('Диспетчер', 'Dispatcher'); }catch(e){}
-  els.curPre.textContent = LANG === 'en' ? '$' : '';
+  els.curPre.textContent = CUR === 'usd' ? '$' : '';
   updateRateInfo();
-  els.curSuf.textContent = LANG === 'en' ? '' : 'грн';
+  els.curSuf.textContent = CUR === 'usd' ? '' : T('грн', 'UAH');
   els.chart.setAttribute('aria-label', T('Графік виробітку й попиту за добу', 'Daily output and demand chart'));
   Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), function(b){
     b.setAttribute('aria-pressed', String(b.getAttribute('data-l') === LANG));
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#curSeg button'), function(b){
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-c') === CUR));
   });
 }
 function setLang(l){
@@ -1052,6 +1067,18 @@ function setLang(l){
 }
 Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), function(b){
   b.addEventListener('click', function(){ setLang(b.getAttribute('data-l')); });
+});
+
+function setCur(c){
+  if(c === CUR) return;
+  CUR = c;
+  try{ localStorage.setItem(CUR_KEY, c); }catch(e){}
+  applyStatic(); updateGens(); rebuildUpg(true); updateGrid();
+  document.getElementById('reformBtns').removeAttribute('data-sig');
+  render(); updateDots();
+}
+Array.prototype.forEach.call(document.querySelectorAll('#curSeg button'), function(b){
+  b.addEventListener('click', function(){ setCur(b.getAttribute('data-c')); });
 });
 
 /* ---------- developer test code (DEV-TEST) ---------- */
