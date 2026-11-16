@@ -152,6 +152,10 @@ main{padding:14px 0 104px}
 .cur.pre{margin:0 2px 0 0}
 .lead .seg{margin-top:10px;max-width:100%}
 .lead .seg button{min-height:44px;padding:8px 16px;font-size:13px}
+.dev{margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
+.dev-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.dev input{flex:1 1 170px;min-width:0;min-height:48px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:500 15px var(--mono)}
+.dev input:focus-visible{outline:2px solid var(--supply);outline-offset:1px}
 .wipe-q{font-size:14px;color:var(--fg)}
 .wipe-row{display:flex;flex-wrap:wrap;gap:10px}
 .wipe .btn{flex:0 0 auto;align-self:flex-start;min-height:34px;padding:5px 14px;font-size:12px;border-radius:7px}
@@ -296,6 +300,14 @@ main{padding:14px 0 104px}
         </div>
         <p class="note" data-en="English also switches hryvnias to dollars at the National Bank of Ukraine rate. The rate updates once a day.">Англійська мова змінює і валюту: гривні на долари за курсом НБУ. Курс оновлюється раз на день.</p>
         <p class="note" id="rateInfo" style="margin-top:6px"></p>
+      </div>
+      <div class="dev" id="devBox">
+        <div class="lead-k" data-en="For developers">Для розробників</div>
+        <div class="dev-row">
+          <input id="devCode" type="text" inputmode="numeric" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Код" aria-label="Код для розробників">
+          <button type="button" class="btn" id="devBtn" data-en="Apply">Застосувати</button>
+        </div>
+        <p class="note" id="devMsg" role="status" style="margin-top:8px"></p>
       </div>
     </section>
   </main>
@@ -1042,6 +1054,23 @@ Array.prototype.forEach.call(document.querySelectorAll('#langSeg button'), funct
   b.addEventListener('click', function(){ setLang(b.getAttribute('data-l')); });
 });
 
+/* ---------- developer test code (DEV-TEST) ---------- */
+function devApply(){
+  var inp = document.getElementById('devCode'), msg = document.getElementById('devMsg');
+  if(inp.value.replace(/\s/g, '') === '3940176617283912'){
+    var add = 1e9 * RATE;
+    S.money += add; S.run += add; S.life += add;
+    inp.value = '';
+    msg.textContent = T('Додано 1 млрд доларів для тесту.', 'Added $1 billion for testing.');
+    toast(T('Тестовий бонус: 1 млрд доларів', 'Test bonus: $1 billion'));
+    render(); updateDots();
+  } else {
+    msg.textContent = T('Невірний код.', 'Wrong code.');
+  }
+}
+document.getElementById('devBtn').addEventListener('click', devApply);
+document.getElementById('devCode').addEventListener('keydown', function(e){ if(e.key === 'Enter') devApply(); });
+
 /* ---------- tabs ---------- */
 function showTab(t){
   tab = t;
@@ -1049,6 +1078,7 @@ function showTab(t){
   Array.prototype.forEach.call(document.querySelectorAll('.tabbtn'), function(b){ b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === t)); });
   window.scrollTo(0, 0);
   if(t === 'upg') rebuildUpg(true);
+  if(t === 'set') document.getElementById('devMsg').textContent = '';
   if(t === 'reform'){ reformArmed = false; document.getElementById('reformBtns').removeAttribute('data-sig'); renderWipe(false); }
   render(); updateDots();
 }
